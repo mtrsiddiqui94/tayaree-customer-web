@@ -322,7 +322,7 @@
 /* Service Cards & Grid */
 .serviceGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 48px;
   width: 100%;
@@ -360,7 +360,7 @@
 
 .scImgWrap img {
   width: 100%;
-  height: 100%;
+  height: 100% !important;
   object-fit: cover;
   display: block;
 }
@@ -462,6 +462,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.scOld::before {
+  content: 'Avg. Market Price ';
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 .scOld s {
@@ -641,13 +648,13 @@
 /* Responsive Rules */
 @media (max-width: 1200px) {
   .serviceGrid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1024px) {
   .serviceGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .main {
     padding: 0 24px 60px;
@@ -685,13 +692,13 @@
 
 @media (max-width: 768px) {
   .serviceGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 480px) {
   .serviceGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .heroLoc {
     display: none;

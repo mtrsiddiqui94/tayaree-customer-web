@@ -57,6 +57,17 @@ export default function HomePage() {
   const [heroSearch, setHeroSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
   useEffect(() => {
     async function loadHomeData() {
       try {
@@ -227,7 +238,9 @@ export default function HomePage() {
                     const discount = Number(service.discount_percentage || service.price_discount || 0);
                     const isVerified = service.is_verified || service.verified;
                     const displayLocation = service.location || service.vendor_location || service.area;
-                    const displayPrice = service.package_discounted_price || service.discounted_price || service.price || 'unset';
+                    const displayPrice = formatPrice(service.price_label || service.package_discounted_price || service.discounted_price || service.price || 'unset');
+                    const displayName = service.name || service.info1_label || 'unset';
+                    const displaySubtitle = service.item_name || service.info2_label || 'unset';
 
                     return (
                       <Link
@@ -238,7 +251,7 @@ export default function HomePage() {
                         <div className={styles.scImgWrap}>
                           <img
                             src={service.image_url}
-                            alt={service.name}
+                            alt={displayName}
                             onError={(e) => {
                               // Fallback image if source fails
                               e.currentTarget.src =
@@ -260,10 +273,10 @@ export default function HomePage() {
                           )}
                         </div>
                         <div className={styles.scBody}>
-                          <div className={styles.scName}>{service.name || 'unset'}</div>
+                          <div className={styles.scName}>{displayName}</div>
                           <span className={styles.scVendor}>
-                            {service.item_name || 'unset'}
-                            {displayLocation ? ` · ${displayLocation}` : ' · unset'}
+                            {displaySubtitle}
+                            {displayLocation ? ` · ${displayLocation}` : ''}
                           </span>
                           <div className={styles.scPriceRow}>
                             <div className={styles.scPrice}>
@@ -271,7 +284,7 @@ export default function HomePage() {
                             </div>
                             {discount > 0 && service.original_price && (
                               <div className={styles.scOld}>
-                                <s>{service.original_price}</s>
+                                <s>{formatPrice(service.original_price)}</s>
                               </div>
                             )}
                           </div>

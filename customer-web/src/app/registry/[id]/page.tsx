@@ -180,8 +180,8 @@ export default function RegistryDetailPage({ params }: { params: Promise<{ id: s
 
         <h3 className={styles.cardTitle} style={{ marginBottom: '16px' }}>Requested Gift Items</h3>
         <div className={styles.grid}>
-          {registry.items.map((item) => (
-            <div key={item.id} className={styles.card}>
+          {registry.items.map((item, idx) => (
+            <div key={idx} className={styles.card}>
               <div className={styles.cardBanner} style={{ height: '140px' }}>
                 <i className="bx bx-gift"></i>
               </div>

@@ -184,9 +184,9 @@ export default function NotificationsPage() {
                 <h3 className={styles.groupHeading}>{g.heading}</h3>
                 
                 <div className={styles.notificationList}>
-                  {g.body.map((item) => (
+                  {g.body.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={idx}
                       className={`${styles.notificationItem} ${item.isRead === 0 ? styles.unreadItem : ''}`}
                     >
                       <div className={styles.iconBox}>

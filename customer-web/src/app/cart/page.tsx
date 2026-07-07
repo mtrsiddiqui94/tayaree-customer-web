@@ -86,6 +86,25 @@ export default function CartPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const formatPrice = (val: any, label?: string) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const lblLower = (label || '').toLowerCase();
+    if (lblLower.includes('guests') || lblLower === 'quantity' || lblLower === 'items count') {
+      return val.toString();
+    }
+    if (lblLower.includes('reservation %') || lblLower.includes('percent')) {
+      const numericPart = val.toString().replace(/%/g, '').trim();
+      return `${numericPart}%`;
+    }
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
   useEffect(() => {
     // Check authentication
     const token = localStorage.getItem('access_token');
@@ -455,7 +474,7 @@ export default function CartPage() {
                               <div className={styles.ciBottom}>
                                 <div className={styles.ciPriceBlock}>
                                   <span className={styles.ciPriceLabel}>Base price</span>
-                                  <span className={styles.ciPriceVal}>{displayPrice}</span>
+                                  <span className={styles.ciPriceVal}>{formatPrice(displayPrice)}</span>
                                 </div>
 
                                 <div className={styles.ciActions}>
@@ -501,9 +520,9 @@ export default function CartPage() {
                         {summary && (
                           <div className={styles.shTotalRow}>
                             <span className={styles.shTotalLbl}>Estimated Net:</span>
-                            <span className={styles.shTotalVal}>
-                              {summary.summary.find(s => s.labelInfo.toLowerCase().includes('net') || s.labelInfo.toLowerCase().includes('total'))?.labelValue || summary.originalPrice.totalAmount}
-                            </span>
+                             <span className={styles.shTotalVal}>
+                               {formatPrice(summary.summary.find(s => s.labelInfo.toLowerCase().includes('net') || s.labelInfo.toLowerCase().includes('total'))?.labelValue || summary.originalPrice.totalAmount)}
+                             </span>
                           </div>
                         )}
                       </div>
@@ -549,7 +568,7 @@ export default function CartPage() {
                             <div key={idx} className={`${styles.priceRow} ${isTotal ? styles.priceRowTotal : ''}`}>
                               <span>{row.labelInfo}</span>
                               <span className={`${styles.priceVal} ${isTotal ? styles.priceValTotal : ''}`}>
-                                {row.labelValue}
+                                {formatPrice(row.labelValue, row.labelInfo)}
                               </span>
                             </div>
                           );

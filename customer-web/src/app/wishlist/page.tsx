@@ -31,6 +31,17 @@ export default function WishlistPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -134,10 +145,10 @@ export default function WishlistPage() {
           </div>
         ) : (
           <div className={styles.grid}>
-            {likes.map((item) => {
+            {likes.map((item, idx) => {
               const detailLink = `/${item.endpoint}/${item.slug}`;
               return (
-                <div key={item.id} className={styles.card}>
+                <div key={idx} className={styles.card}>
                   <img
                     src={item.image_url}
                     alt={item.name}
@@ -153,7 +164,7 @@ export default function WishlistPage() {
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '10px' }}>
                       <span className={styles.cardPrice}>
-                        {item.package_discounted_price || item.price}
+                        {formatPrice(item.package_discounted_price || item.price)}
                       </span>
                     </div>
 
@@ -162,7 +173,7 @@ export default function WishlistPage() {
                         Details
                       </Link>
                       <button onClick={() => handleRemoveLike(item)} className={styles.btnRemove}>
-                        <i className="bx bx-trash"></i> Remove
+                        <i className="bx bx-trash"></i>
                       </button>
                     </div>
                   </div>

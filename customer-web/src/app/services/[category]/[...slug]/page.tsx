@@ -121,6 +121,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
   
   // Customization selection States
   const [selectedDate, setSelectedDate] = useState<string>('');
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedPriceId, setSelectedPriceId] = useState<number | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [guestCount, setGuestCount] = useState<number>(0);
@@ -133,6 +134,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
   // Summary States
   const [priceSummaryId, setPriceSummaryId] = useState<number | null>(null);
+  const [priceSummaryHeading, setPriceSummaryHeading] = useState<string>('');
   const [priceRows, setPriceRows] = useState<PriceRow[]>([]);
   const [installments, setInstallments] = useState<InstallmentRow[]>([]);
 
@@ -142,6 +144,17 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
 
   // Load Main Service Specs
   useEffect(() => {
@@ -250,6 +263,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
         if (avail) {
           setSelectedDate(avail.calendarDate);
           setSelectedPriceId(avail.priceId);
+          setCurrentMonth(new Date(avail.calendarDate));
         }
       }
     } catch (e) {
@@ -360,7 +374,12 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
         if (res.status && res.data) {
           setPriceSummaryId(res.data.priceSummaryId);
-          setPriceRows(res.data.summary);
+          setPriceSummaryHeading(res.data.heading || '');
+          const mappedRows = (res.data.summary || []).map((r: any) => ({
+            labelInfo: r.label_info || r.labelInfo || '',
+            labelValue: r.label_value !== undefined ? r.label_value : r.labelValue
+          }));
+          setPriceRows(mappedRows);
           
           // Trigger installments fetch if price id is active
           if (detail.detailConfig.isShowPaymentSchedule && res.data.priceSummaryId) {
@@ -388,11 +407,23 @@ export default function ServiceDetailPage({ params }: PageProps) {
         `/api/v1/${endpointPath}/payment-terms?price_summary_id=${summaryId}`
       );
       if (res.status && res.data?.summary) {
-        setInstallments(res.data.summary);
+        const mappedInst = (res.data.summary || []).map((r: any) => ({
+          labelInfo: r.label_info || r.labelInfo || '',
+          labelValue: r.label_value !== undefined ? r.label_value : r.labelValue
+        }));
+        setInstallments(mappedInst);
       }
     } catch (e) {
       console.error('Error loading installments schedule:', e);
     }
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   const handleItemToggle = (itemId: number) => {
@@ -448,6 +479,51 @@ export default function ServiceDetailPage({ params }: PageProps) {
       </>
     );
   }
+
+  const formatBreakdownValue = (label: string | undefined, val: any) => {
+    if (val === undefined || val === null) return 'unset';
+    const lblLower = (label || '').toLowerCase();
+    
+    // Guests or numeric counts
+    if (lblLower.includes('guests') || lblLower === 'quantity' || lblLower === 'items count') {
+      return val.toString();
+    }
+    
+    // Reservation percentage or any percentage
+    if (lblLower.includes('reservation %') || lblLower.includes('percent')) {
+      const numericPart = val.toString().replace(/%/g, '').trim();
+      return `${numericPart}%`;
+    }
+    
+    // Currency formatting
+    if (typeof val === 'number') {
+      return `PKR ${val.toLocaleString('en-US')}`;
+    }
+    
+    // String that might contain PKR
+    const valStr = val.toString();
+    if (valStr.includes('PKR')) {
+      return valStr;
+    }
+    
+    // If it's a number-like string
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    
+    return valStr;
+  };
+
+  const isBoldRow = (label: string | undefined) => {
+    if (!label) return false;
+    const lblLower = label.toLowerCase();
+    return lblLower.includes('order total') || 
+           lblLower.includes('amount due today') || 
+           lblLower.includes('future payments') ||
+           lblLower.includes('remaining balance') ||
+           lblLower.includes('total');
+  };
 
   // Gallery slider configuration
   const galleryImages = detail.images.length > 0 ? detail.images : [detail.imageUrl];
@@ -597,44 +673,90 @@ export default function ServiceDetailPage({ params }: PageProps) {
             </div>
 
             {/* Dynamic availability Calendar */}
-            {detail.detailConfig.isShowCalendar && calendarSlots.length > 0 && (
-              <div className={styles.sectionCard}>
-                <h3 className={styles.secTitle}>
-                  <i className="bx bx-calendar"></i>Select Event Date
-                </h3>
-                <div className={styles.calendarGrid}>
-                  {calendarSlots.slice(0, 14).map((slot, idx) => {
-                    const dateObj = new Date(slot.calendarDate);
-                    const isSelected = selectedDate === slot.calendarDate;
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          if (slot.isAvailable) {
-                            setSelectedDate(slot.calendarDate);
-                            setSelectedPriceId(slot.priceId);
-                            showToast(`Selected date: ${slot.calendarDate}`, 'info');
-                          }
-                        }}
-                        className={`${styles.calDateCell} ${
-                          isSelected ? styles.calDateCellActive : ''
-                        } ${!slot.isAvailable ? styles.calDateCellDisabled : ''}`}
-                      >
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.7 }}>
-                          {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
-                        </span>
-                        <span style={{ fontSize: '16px', fontWeight: '800' }}>
-                          {dateObj.getDate()}
-                        </span>
-                        <span className={styles.calPriceBadge}>
-                          {slot.isAvailable ? 'Rs.' + slot.price : 'Booked'}
-                        </span>
+            {detail.detailConfig.isShowCalendar && calendarSlots.length > 0 && (() => {
+              const yr = currentMonth.getFullYear();
+              const mo = currentMonth.getMonth();
+              const firstDay = new Date(yr, mo, 1);
+              const startDayOfWeek = firstDay.getDay();
+              const totalDays = new Date(yr, mo + 1, 0).getDate();
+              
+              const dayCells: Array<{ dayNum: number; dateString: string; slot: CalendarSlot | null } | null> = [];
+              for (let i = 0; i < startDayOfWeek; i++) {
+                dayCells.push(null);
+              }
+              for (let d = 1; d <= totalDays; d++) {
+                const pad = (n: number) => String(n).padStart(2, '0');
+                const dateString = `${pad(mo + 1)}/${pad(d)}/${yr}`;
+                const slot = calendarSlots.find(s => s.calendarDate === dateString) || null;
+                dayCells.push({ dayNum: d, dateString, slot });
+              }
+
+              const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+              return (
+                <div className={styles.sectionCard}>
+                  <h3 className={styles.secTitle}>
+                    <i className="bx bx-calendar"></i>Select Event Date
+                  </h3>
+                  
+                  {/* Month Selector Nav Header */}
+                  <div className={styles.monthHeader}>
+                    <button type="button" onClick={handlePrevMonth} className={styles.monthNavBtn}>
+                      <i className="bx bx-chevron-left"></i>
+                    </button>
+                    <span className={styles.monthTitle}>
+                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button type="button" onClick={handleNextMonth} className={styles.monthNavBtn}>
+                      <i className="bx bx-chevron-right"></i>
+                    </button>
+                  </div>
+
+                  {/* 7-column Calendar Grid */}
+                  <div className={styles.calendarGrid}>
+                    {weekdays.map((day) => (
+                      <div key={day} className={styles.calDayHead}>
+                        {day}
                       </div>
-                    );
-                  })}
+                    ))}
+
+                    {dayCells.map((cell, idx) => {
+                      if (!cell) {
+                        return <div key={`empty-${idx}`} className={styles.calEmptyCell} />;
+                      }
+
+                      const isSelected = selectedDate === cell.dateString;
+                      const isAvailable = cell.slot ? cell.slot.isAvailable : false;
+                      const price = cell.slot ? cell.slot.price : null;
+                      const priceId = cell.slot ? cell.slot.priceId : null;
+
+                      return (
+                        <div
+                          key={`day-${cell.dayNum}`}
+                          onClick={() => {
+                            if (isAvailable && cell.slot) {
+                              setSelectedDate(cell.dateString);
+                              setSelectedPriceId(priceId);
+                              showToast(`Selected date: ${cell.dateString}`, 'info');
+                            }
+                          }}
+                          className={`${styles.calDateCell} ${
+                            isSelected ? styles.calDateCellActive : ''
+                          } ${!isAvailable ? styles.calDateCellDisabled : ''}`}
+                        >
+                          <span style={{ fontSize: '15px', fontWeight: '800' }}>
+                            {cell.dayNum}
+                          </span>
+                          <span className={styles.calPriceBadge}>
+                            {isAvailable && price !== null ? `Rs.${price}` : 'Booked'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Customizable items checklist */}
             {detail.detailConfig.isShowItemsList && customItems.length > 0 && (
@@ -779,10 +901,10 @@ export default function ServiceDetailPage({ params }: PageProps) {
           {/* RIGHT STICKY BOOKING PANEL */}
           <aside className={styles.bookingCard}>
             <div className={styles.priceLabel}>Package Starts from</div>
-            <div className={styles.basePrice}>{detail.finalPrice}</div>
+            <div className={styles.basePrice}>{formatPrice(detail.finalPrice)}</div>
             {detail.originalPrice && (
               <div className={styles.oldBasePrice}>
-                <s>{detail.originalPrice}</s>
+                <s>{formatPrice(detail.originalPrice)}</s>
               </div>
             )}
 
@@ -815,7 +937,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
             {/* Real-time Pricing Breakdown */}
             <div className={styles.pricingTable}>
-              <span className={styles.calcLabel}>Price breakdown</span>
+              <span className={styles.calcLabel}>{priceSummaryHeading || 'Price breakdown'}</span>
               
               {isPriceLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 0' }}>
@@ -823,12 +945,15 @@ export default function ServiceDetailPage({ params }: PageProps) {
                 </div>
               ) : (
                 <>
-                  {priceRows.map((row, idx) => (
-                    <div key={idx} className={styles.priceRow}>
-                      <span className={styles.priceRowLabel}>{row.labelInfo}</span>
-                      <span className={styles.priceRowVal}>{row.labelValue}</span>
-                    </div>
-                  ))}
+                   {priceRows.map((row, idx) => {
+                     const isBold = isBoldRow(row.labelInfo);
+                     return (
+                       <div key={idx} className={isBold ? styles.priceRowBold : styles.priceRow}>
+                         <span className={styles.priceRowLabel}>{row.labelInfo}</span>
+                         <span className={styles.priceRowVal}>{formatBreakdownValue(row.labelInfo, row.labelValue)}</span>
+                       </div>
+                     );
+                   })}
                 </>
               )}
             </div>
@@ -850,7 +975,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                             isTotal ? styles.installValHighlight : ''
                           }`}
                         >
-                          {row.labelValue}
+                          {formatBreakdownValue(row.labelInfo, row.labelValue)}
                         </span>
                       </div>
                     );

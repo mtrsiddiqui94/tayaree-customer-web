@@ -53,6 +53,17 @@ export default function CategoryListingPage({ params }: PageProps) {
     ? category.charAt(0).toUpperCase() + category.slice(1)
     : 'Services';
 
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
   useEffect(() => {
     async function loadCategoryServices() {
       if (!category) return;
@@ -83,9 +94,10 @@ export default function CategoryListingPage({ params }: PageProps) {
     showToast('Filters reset.', 'info');
   };
 
-  const getNumericPrice = (priceStr: string): number => {
-    if (!priceStr) return 0;
-    const cleaned = priceStr.replace(/[^0-9]/g, '');
+  const getNumericPrice = (priceStr: string | number | undefined | null): number => {
+    if (priceStr === undefined || priceStr === null || priceStr === '') return 0;
+    if (typeof priceStr === 'number') return priceStr;
+    const cleaned = priceStr.toString().replace(/[^0-9]/g, '');
     const num = Number(cleaned);
     return isNaN(num) ? 0 : num;
   };
@@ -294,17 +306,17 @@ export default function CategoryListingPage({ params }: PageProps) {
                               <h3 className={styles.svcName}>{svc.name || 'unset'}</h3>
                               <span className={styles.svcVendor}>
                                 {svc.item_name || 'unset'}
-                                {displayLocation ? ` · ${displayLocation}` : ' · unset'}
+                                {displayLocation ? ` · ${displayLocation}` : ''}
                               </span>
                             </div>
                             <div className={styles.svcFooter}>
                               <div className={styles.svcPriceRow}>
                                 <div className={styles.svcPrice}>
-                                  {displayPrice}
+                                  {formatPrice(displayPrice)}
                                 </div>
                                 {discount > 0 && svc.original_price && (
                                   <div className={styles.svcMrkt}>
-                                    <s>{svc.original_price}</s>
+                                    <s>{formatPrice(svc.original_price)}</s>
                                   </div>
                                 )}
                               </div>
