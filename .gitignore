@@ -1,0 +1,8 @@
+# Ignore all directories and files at the root level by default
+/*
+
+# But track the customer-web directory
+!/customer-web/
+
+# Track the root gitignore itself
+!/.gitignore

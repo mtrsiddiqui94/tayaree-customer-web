@@ -1,0 +1,633 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 100px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--primary);
+}
+
+.breadcrumb .sep {
+  opacity: 0.4;
+}
+
+.breadcrumb .current {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.backCart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--card);
+  transition: all 0.15s ease;
+}
+
+.backCart:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.checkoutLayout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 30px;
+  align-items: start;
+}
+
+@media (max-width: 968px) {
+  .checkoutLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.cardInner {
+  padding: 24px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardTitle i {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+/* Order review items */
+.revRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.revRow:last-child {
+  border-bottom: none;
+}
+
+.revImg {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-s);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--input-bg);
+}
+
+.revInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.revName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.revVendor {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.revMeta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.revRight {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.revDue {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.revDueLbl {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+
+/* Address List */
+.addressList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addressItem {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  cursor: pointer;
+  background: var(--card);
+  transition: all 0.15s ease;
+}
+
+.addressItemActive {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.addrIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-s);
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.addressItemActive .addrIcon {
+  background: var(--primary);
+  color: #fff;
+}
+
+.addrInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.addrName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.addrLine {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.addrPhone {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.addrBadge {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.addrRadio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.addrRadioActive {
+  border-color: var(--primary);
+}
+
+.addrRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* Inline Address Add Form */
+.addAddrBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 0;
+  margin-top: 10px;
+}
+
+.addAddrBtn:hover {
+  text-decoration: underline;
+}
+
+.addressForm {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 20px;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 576px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroup label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.inputField {
+  height: 40px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 0 12px;
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.inputField:focus {
+  border-color: var(--primary);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btnCancel {
+  height: 36px;
+  padding: 0 16px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.btnSave {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-s);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Payment Selector */
+.paymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payOptionRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  background: var(--card);
+  transition: all 0.15s ease;
+}
+
+.payOptionRowActive {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.payLogo {
+  width: 44px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.payLogoVisa {
+  background: #1A1F71;
+  color: #fff;
+}
+
+.payLogoMaster {
+  background: #EB001B;
+  color: #fff;
+}
+
+.payLogoCod {
+  background: rgba(26, 122, 54, 0.1);
+  color: var(--success);
+  font-size: 18px;
+}
+
+.payOptionInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.payOptionName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.payOptionSub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.payDefaultBadge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+
+/* Special Instructions */
+.textareaField {
+  width: 100%;
+  min-height: 80px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  resize: vertical;
+  transition: all 0.15s ease;
+}
+
+.textareaField:focus {
+  border-color: var(--primary);
+}
+
+.termsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.termsRow input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.termsRow span {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.termsRow a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Sidebar sticky cards & pricing */
+.sidebarSticky {
+  position: sticky;
+  top: 90px;
+}
+
+.bookingCard {
+  background: var(--card);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.sidebarHead {
+  padding: 20px 22px;
+  background: linear-gradient(135deg, #7A0810 0%, #A80E14 40%, #D71921 100%);
+  color: #fff;
+}
+
+.shEyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.shTitle {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.shTotalRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.shTotalLbl {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.shTotalVal {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.priceBreakdown {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.priceVal {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.priceValGreen {
+  color: var(--success);
+}
+
+.priceDashed {
+  height: 1px;
+  border: none;
+  border-top: 1.5px dashed var(--border);
+  margin: 10px 0;
+}
+
+.priceRowTotal {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.priceValTotal {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.ctaSection {
+  padding: 20px;
+}
+
+.btnConfirm {
+  width: 100%;
+  height: 48px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btnConfirm:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btnConfirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

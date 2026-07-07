@@ -1,0 +1,145 @@
+.footer {
+  background: #111111;
+  padding: 56px 40px 0;
+  width: 100%;
+}
+
+.footerInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 60px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  text-decoration: none;
+}
+
+.footerLogoMark {
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.footerLogoName {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.footerTagline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.40);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.footerSocials {
+  display: flex;
+  gap: 10px;
+}
+
+.footerSocial {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.50);
+  font-size: 18px;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.footerSocial:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.footerColTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footerLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footerLink {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footerLink:hover {
+  color: #fff;
+}
+
+.footerBottom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footerCopy {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.footerPay {
+  display: flex;
+  gap: 10px;
+}
+
+.footerPayBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.30);
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-s);
+}
+
+/* Responsiveness */
+@media (max-width: 860px) {
+  .footerInner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-bottom: 30px;
+  }
+  
+  .footerBottom {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+}

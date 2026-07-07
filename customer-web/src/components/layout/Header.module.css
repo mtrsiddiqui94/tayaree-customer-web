@@ -1,0 +1,246 @@
+.header {
+  position: sticky;
+  top: 0;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  z-index: 200;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.headerInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoMark {
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.logoName {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.headerSearch {
+  flex: 1;
+  max-width: 320px;
+  height: 38px;
+  background: var(--input-bg);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.headerSearch:focus-within {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.headerSearch i {
+  color: var(--text-muted);
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.headerSearch input {
+  border: none;
+  background: transparent;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 13px;
+  color: var(--text-primary);
+  width: 100%;
+  outline: none;
+}
+
+.headerSearch input::placeholder {
+  color: var(--text-muted);
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.navLink {
+  padding: 7px 12px;
+  border-radius: var(--radius-s);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.navLink:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.navLinkActive {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.iconBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 20px;
+  position: relative;
+  transition: background-color 0.15s, color 0.15s;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: var(--bg);
+  color: var(--primary);
+}
+
+.iconBadge {
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+.avatarBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s;
+}
+
+.avatarBtn:hover {
+  background: var(--primary-dark);
+}
+
+.signInBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  box-shadow: var(--shadow-btn);
+  transition: background-color 0.15s;
+}
+
+.signInBtn:hover {
+  background: var(--primary-dark);
+}
+
+.mobileLink {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.mobileLink:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mobileLink i {
+  font-size: 16px;
+}
+
+/* Responsiveness */
+@media (max-width: 860px) {
+  .headerSearch {
+    display: none;
+  }
+  
+  .headerNav {
+    display: none;
+  }
+  
+  .headerInner {
+    padding: 0 16px;
+    justify-content: space-between;
+  }
+  
+  .headerActions {
+    margin-left: 0;
+  }
+}

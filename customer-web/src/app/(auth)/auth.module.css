@@ -1,0 +1,654 @@
+/* Unified Auth Page Styles */
+
+.authSplit {
+  display: flex;
+  min-height: 100vh;
+  background: var(--card);
+}
+
+/* Brand Panel (Left Column) */
+.authBrand {
+  width: 44%;
+  max-width: 560px;
+  background: linear-gradient(150deg, #A80E14 0%, #D71921 58%, #E5434A 100%);
+  color: #fff;
+  padding: 44px 48px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.authBrand::after {
+  content: '';
+  position: absolute;
+  right: -120px;
+  bottom: -120px;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+.authBrand::before {
+  content: '';
+  position: absolute;
+  right: 70px;
+  top: -90px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.brandLogo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.brandLogoMark {
+  width: 36px;
+  height: 36px;
+  background: #fff;
+  color: var(--primary);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.brandLogoName {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.brandMid {
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.brandHead {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+
+.brandSub {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.88);
+  margin-top: 14px;
+  line-height: 1.6;
+  max-width: 410px;
+}
+
+.brandFeats {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brandFeat {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.brandFeat i {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  flex-shrink: 0;
+}
+
+.brandFoot {
+  margin-top: auto;
+  padding-top: 38px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+  position: relative;
+  z-index: 1;
+}
+
+/* Form Side (Right Column) */
+.authFormSide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.authTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 24px 40px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.authTopbar .mLogo {
+  display: none;
+  margin-right: auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.authTopbar .mLogo .lm {
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.authTopbar .mLogo .ln {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.authTopbar a.link {
+  color: var(--primary);
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.authBody {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 24px 60px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 400px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.backLink:hover {
+  color: var(--primary);
+}
+
+.authIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  margin-bottom: 20px;
+}
+
+.authTitle {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.authSub {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 7px;
+  line-height: 1.55;
+}
+
+.authSub b {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.fld {
+  margin-top: 17px;
+}
+
+.fldLbl {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: block;
+  color: var(--text-secondary);
+}
+
+.fldWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 0 14px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.fldWrap:focus-within {
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.fldWrapError {
+  border-color: var(--primary) !important;
+}
+
+.fldErrorMsg {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+  display: block;
+}
+
+.fldWrap i.lead {
+  color: var(--text-muted);
+  font-size: 19px;
+}
+
+.fldWrap input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 14px;
+  padding: 14px 0;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.fldEye {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 19px;
+}
+
+.fldCc {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding-right: 11px;
+  margin-right: 1px;
+  border-right: 1.5px solid var(--border);
+}
+
+.terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-top: 18px;
+  line-height: 1.5;
+}
+
+.terms input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.terms a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+.linkR {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.btnPrimary {
+  width: 100%;
+  height: 52px;
+  margin-top: 22px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.btnPrimary:hover {
+  background: var(--primary-dark);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.authOr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.authOr::before,
+.authOr::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.socialRow {
+  display: flex;
+  gap: 12px;
+}
+
+.socialBtn {
+  flex: 1;
+  height: 48px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.socialBtn:hover {
+  background: var(--surface);
+  border-color: var(--text-muted);
+}
+
+.socialBtn i {
+  font-size: 20px;
+}
+
+.authFoot {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 24px;
+}
+
+.authFoot a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.authLegal {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 20px;
+  line-height: 1.6;
+}
+
+.authLegal a {
+  color: var(--text-secondary);
+}
+
+/* OTP Verification Styles */
+.otpRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.otpInput {
+  width: 100%;
+  height: 60px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  outline: none;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.otpInput:focus {
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.otpInput.filled {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.otpResend {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 22px;
+}
+
+.otpResend b {
+  color: var(--text-primary);
+}
+
+.otpResend a {
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.otpResend a.off {
+  color: var(--text-muted);
+  pointer-events: none;
+  font-weight: 600;
+  cursor: default;
+}
+
+.otpChange {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.otpChange a {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.otpChange a:hover {
+  color: var(--primary);
+}
+
+/* Password Reset / Strength Styles */
+.pwStrength {
+  margin-top: 12px;
+}
+
+.pwBars {
+  display: flex;
+  gap: 6px;
+}
+
+.pwBar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  transition: background-color 0.2s;
+}
+
+.pwBar.on1 {
+  background: var(--primary);
+}
+
+.pwBar.on2 {
+  background: var(--amber);
+}
+
+.pwBar.on3 {
+  background: var(--success);
+}
+
+.pwHint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pwHint b {
+  color: var(--text-secondary);
+}
+
+.matchNote {
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-top: 8px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+}
+
+.matchNote.ok {
+  display: flex;
+  color: var(--success);
+}
+
+.matchNote.bad {
+  display: flex;
+  color: var(--primary);
+}
+
+/* Info note for forgot password */
+.infoNote {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  background: rgba(26, 107, 181, 0.06);
+  border: 1px solid rgba(26, 107, 181, 0.2);
+  border-radius: var(--radius-s);
+  padding: 12px 14px;
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.infoNote i {
+  color: #1A6BB5;
+  font-size: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.errorText {
+  color: var(--primary);
+  font-size: 12.5px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.successText {
+  color: var(--success);
+  font-size: 12.5px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Responsive Rules */
+@media (max-width: 860px) {
+  .authBrand {
+    display: none;
+  }
+  
+  .authTopbar .mLogo {
+    display: flex;
+  }
+  
+  .authTopbar {
+    padding: 24px 24px;
+  }
+  
+  .authBody {
+    padding: 6px 24px 40px;
+  }
+}
