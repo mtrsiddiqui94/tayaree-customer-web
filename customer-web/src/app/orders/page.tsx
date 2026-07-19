@@ -18,6 +18,8 @@ interface OrderItem {
   quantity: number;
   image_url: string;
   status: string;
+  timeOfDayLabel?: string;
+  variantName?: string;
   [key: string]: any;
 }
 
@@ -30,13 +32,29 @@ interface Order {
   status_id: number;
   payment_status: string;
   items: OrderItem[];
+  packageName: string;
+  vendorName: string;
+  imageUrl: string;
+  quantity: number;
+  deliveryDate: string;
+  timeOfDayLabel: string;
+  itemsCount: number;
+  deliverAs: string;
+  noOfGuests: number;
   [key: string]: any;
+}
+
+interface OrderBuyAgain {
+  endpointUri: string;
+  itemName: string;
+  imageUrl: string;
 }
 
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
+  const [buyAgainItems, setBuyAgainItems] = useState<OrderBuyAgain[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'transit' | 'delivered' | 'cancelled'>('all');
   
   // Cancel modal states
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -58,38 +76,75 @@ export default function OrdersPage() {
       router.push('/login?redirect=/orders');
       return;
     }
-    loadOrders();
+    loadData();
   }, []);
 
-  const loadOrders = async () => {
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
+  async function loadData() {
     try {
       setIsLoading(true);
+
+      // Fetch Buy Again Items
+      const buyAgainRes = await api.get<{ status: boolean; data: any[] }>('/api/v1/order/buy-again').catch(() => null);
+      if (buyAgainRes?.status && buyAgainRes.data) {
+        setBuyAgainItems(buyAgainRes.data.map(e => ({
+          endpointUri: e.endpoint_uri || e.endpointUri || '#',
+          itemName: e.item_name || e.itemName || 'unset',
+          imageUrl: e.image_url || e.imageUrl || '',
+        })));
+      }
+
+      // Fetch Orders
       const res = await api.get<{ status: boolean; data: any[] }>('/api/v1/order/list?limit=20&page=1');
       if (res.status && res.data) {
-        // Parse orders and package lists
-        const parsedOrders: Order[] = res.data.map((ord: any) => {
-          const ordItems: OrderItem[] = (ord.items || ord.packages || []).map((itm: any) => ({
-            id: itm.id || itm.order_item_id || 0,
-            order_id: itm.order_id || ord.id,
-            service_id: itm.service_id || 0,
-            name: itm.name || itm.service_name || 'unset',
-            item_name: itm.item_name || 'unset',
-            price: itm.price || itm.item_price || 'unset',
-            quantity: itm.quantity || 1,
-            image_url: itm.image_url || itm.imageUrl || '',
-            status: itm.status || itm.status_name || 'Booked',
-          }));
+        const parsedOrders: Order[] = [];
+        
+        res.data.forEach((section: any) => {
+          const bodyList = section.body || [];
+          bodyList.forEach((ord: any) => {
+            const ordItems: OrderItem[] = (ord.items || []).map((itm: any) => ({
+              id: itm.item_id || 0,
+              order_id: ord.order_id || 0,
+              service_id: itm.item_id || 0,
+              name: itm.item_name || 'unset',
+              item_name: itm.item_name || 'unset',
+              price: itm.price || 'unset',
+              quantity: ord.quantity || 1,
+              image_url: itm.image_url || '',
+              status: itm.item_status || 'Booked',
+              variantName: itm.variant_name || 'Standard'
+            }));
 
-          return {
-            id: ord.id,
-            order_number: ord.order_number || ord.orderNumber || 'unset',
-            order_date: ord.order_date || ord.orderDate || 'unset',
-            total_amount: ord.total_amount || ord.totalAmount || 'unset',
-            status: ord.status || ord.status_name || 'unset',
-            status_id: ord.status_id || 1,
-            payment_status: ord.payment_status || ord.paymentStatus || 'unset',
-            items: ordItems,
-          };
+            parsedOrders.push({
+              id: ord.order_id,
+              order_number: ord.order_number || ord.order_package_line_id?.toString() || `ORD-${ord.order_id}`,
+              order_date: ord.booking_date || ord.delivery_date || 'unset',
+              total_amount: formatPrice(ord.rate_per_head || ord.per_head_amount || ord.total_amount),
+              status: String(ord.package_status || 'unset'),
+              status_id: 1, // Fallback
+              payment_status: String(ord.payment_status || ord.payment_status_text || 'unset'),
+              items: ordItems,
+              packageName: ord.package_name || 'unset',
+              vendorName: ord.vendor_name || ord.store_name || (ord.vendor && ord.vendor.name) || 'unset',
+              imageUrl: ord.image_url || '',
+              quantity: ord.quantity || 1,
+              deliveryDate: ord.delivery_date || 'unset',
+              timeOfDayLabel: ord.time_of_day_label || '',
+              itemsCount: ord.items_count || ordItems.length,
+              deliverAs: ord.package_deliver_as || 'package',
+              noOfGuests: ord.no_of_guests || 0,
+            });
+          });
         });
 
         setOrders(parsedOrders);
@@ -100,49 +155,33 @@ export default function OrdersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   // Filter orders matching active Tab selection
   const filteredOrders = orders.filter((ord) => {
+    const s = ord.status.toLowerCase();
     if (activeTab === 'all') return true;
-    if (activeTab === 'pending') {
-      return ord.status.toLowerCase().includes('pending') || ord.status.toLowerCase().includes('placed') || ord.status_id === 1;
-    }
-    if (activeTab === 'completed') {
-      return ord.status.toLowerCase().includes('completed') || ord.status.toLowerCase().includes('delivered') || ord.status_id === 4;
-    }
-    if (activeTab === 'cancelled') {
-      return ord.status.toLowerCase().includes('cancel') || ord.status_id === 5;
-    }
+    if (activeTab === 'active') return s.includes('pending') || s.includes('placed') || ord.status_id === 1;
+    if (activeTab === 'transit') return s.includes('transit');
+    if (activeTab === 'delivered') return s.includes('complete') || s.includes('delivered') || ord.status_id === 4;
+    if (activeTab === 'cancelled') return s.includes('cancel') || ord.status_id === 5;
     return true;
   });
 
-  // Open Cancel Request Dialog
-  const openCancelModal = (ord: Order) => {
-    setCancellingOrderId(ord.id);
-    setCancellingItems(ord.items);
-    setCancelModalOpen(true);
+  const getStatusClass = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes('complete') || s.includes('delivered')) return styles.confirmed;
+    if (s.includes('transit')) return styles.transit;
+    if (s.includes('cancel')) return styles.cancelled;
+    return styles.pending; // Default for pending/active
   };
 
-  // POST Cancellation Request
-  const handleCancelSubmit = async () => {
-    if (!cancellingOrderId) return;
-    try {
-      // Map cancellation list payload matching MyOrderRepositoryImpl
-      const itemsPayload = cancellingItems.map(itm => ({
-        orderItemId: itm.id,
-        quantity: itm.quantity
-      }));
-
-      // In MyOrderRepositoryImpl: cancelOrder POST request to `/api/v1/order/cancel/$orderId`
-      const res = await api.post<{ status: boolean; message?: string }>(`/api/v1/order/cancel/${cancellingOrderId}`, itemsPayload);
-      
-      showToast(res.message || 'Booking cancellation request submitted successfully.');
-      setCancelModalOpen(false);
-      loadOrders();
-    } catch (e: any) {
-      showToast(e.message || 'Failed to cancel order booking.', 'error');
-    }
+  const getStatusIcon = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes('complete') || s.includes('delivered')) return 'bx bx-check-circle';
+    if (s.includes('transit')) return 'bx bx-truck';
+    if (s.includes('cancel')) return 'bx bx-x-circle';
+    return 'bx bx-time-five';
   };
 
   return (
@@ -173,174 +212,246 @@ export default function OrdersPage() {
         </div>
       )}
 
-      <main className={styles.page}>
-        {/* Breadcrumb */}
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>My Bookings</span>
-        </div>
-
-        <div className={styles.pageHead}>
-          <h1 className={styles.pageTitle}>My Bookings Portfolio</h1>
-          <p className={styles.pageSub}>Track your event service quotes and delivery updates in one central panel.</p>
-        </div>
-
-        {/* Tab Filters */}
-        <div className={styles.statusTabs}>
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`${styles.statusTab} ${activeTab === 'all' ? styles.statusTabActive : ''}`}
-          >
-            All Bookings <span className={styles.tabCount}>{orders.length}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`${styles.statusTab} ${activeTab === 'pending' ? styles.statusTabActive : ''}`}
-          >
-            Pending / Active{' '}
-            <span className={styles.tabCount}>
-              {orders.filter(o => o.status.toLowerCase().includes('pending') || o.status.toLowerCase().includes('placed') || o.status_id === 1).length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`${styles.statusTab} ${activeTab === 'completed' ? styles.statusTabActive : ''}`}
-          >
-            Finalized{' '}
-            <span className={styles.tabCount}>
-              {orders.filter(o => o.status.toLowerCase().includes('completed') || o.status.toLowerCase().includes('delivered')).length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('cancelled')}
-            className={`${styles.statusTab} ${activeTab === 'cancelled' ? styles.statusTabActive : ''}`}
-          >
-            Cancelled{' '}
-            <span className={styles.tabCount}>
-              {orders.filter(o => o.status.toLowerCase().includes('cancel')).length}
-            </span>
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '100px 0' }}>
-            <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
-            <p style={{ marginTop: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>Loading orders portfolio...</p>
+      <main className={styles.dashLayout ? "" : ""}>
+        <div style={{maxWidth: "1280px", margin: "0 auto", padding: "22px 40px 80px"}}>
+          {/* Breadcrumb */}
+          <div className={styles.breadcrumb}>
+            <Link href="/">Home</Link>
+            <span className={styles.breadcrumbSep}>/</span>
+            <span>My Orders</span>
           </div>
-        ) : filteredOrders.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-            <i className="bx bx-calendar-x" style={{ fontSize: '48px', color: 'var(--text-muted)' }}></i>
-            <p style={{ marginTop: '14px', color: 'var(--text-secondary)', fontWeight: 600 }}>No bookings found matching filters.</p>
-            <Link href="/" className={styles.btnSm} style={{ marginTop: '16px', background: 'var(--primary)', color: '#fff', padding: '0 20px', height: '36px' }}>
-              Explore Services
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {filteredOrders.map((ord) => {
-              const mainItem = ord.items[0];
-              const isCancelled = ord.status.toLowerCase().includes('cancel') || ord.status_id === 5;
-              const isPending = ord.status.toLowerCase().includes('pending') || ord.status.toLowerCase().includes('placed') || ord.status_id === 1;
 
-              return (
-                <div key={ord.id} className={styles.orderCard}>
-                  <div className={styles.orderCardHeader}>
-                    <div className={styles.orderMeta}>
-                      <span className={styles.orderNumber}>
-                        Booking Reference: <strong>#{ord.order_number}</strong>
-                      </span>
-                      <h3 className={styles.orderTitle}>
-                        {mainItem?.name || 'unset'}
-                        {ord.items.length > 1 && ` + ${ord.items.length - 1} other packages`}
-                      </h3>
-                      <div className={styles.orderBadges}>
-                        <span className={`${styles.badge} ${
-                          isCancelled ? styles.badgeError : ord.status.toLowerCase().includes('complete') ? styles.badgeSuccess : styles.badgeWarning
-                        }`}>
-                          {ord.status}
-                        </span>
-                        <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-                          {ord.payment_status}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={styles.orderPriceBlock}>
-                      <span className={styles.orderTotal}>{ord.total_amount}</span>
-                    </div>
+          {/* Dash Layout */}
+          <div className={styles.dashLayout}>
+            
+            {/* Dashboard Sidebar */}
+            <aside className={styles.dashSidebar}>
+              <div className={styles.sidebarCard}>
+                <div className={styles.sidebarProfile}>
+                  <div className={styles.sidebarAvatar}>A</div>
+                  <div className={styles.sidebarName}>Adnan Siddiqui</div>
+                  <div className={styles.sidebarEmail}>adnan@email.com</div>
+                </div>
+                <nav className={styles.sidebarNav}>
+                  <div className={styles.sidebarNavLabel}>Activities</div>
+                  <Link href="/orders" className={`${styles.sidebarNavItem} ${styles.active}`}>
+                    <i className='bx bx-receipt'></i> Orders <span className={styles.sidebarNavBadge}>{orders.length}</span>
+                  </Link>
+                  <Link href="/all-deliveries" className={styles.sidebarNavItem}>
+                    <i className='bx bx-package'></i> Deliveries
+                  </Link>
+                  <Link href="/all-payments" className={styles.sidebarNavItem}>
+                    <i className='bx bx-credit-card'></i> Payments
+                  </Link>
+                  <Link href="/quotes" className={styles.sidebarNavItem}>
+                    <i className='bx bx-file-blank'></i> Quotes
+                  </Link>
+                  <Link href="/events" className={styles.sidebarNavItem}>
+                    <i className='bx bx-calendar'></i> Events
+                  </Link>
+                  <Link href="/gift-registry" className={styles.sidebarNavItem}>
+                    <i className='bx bx-gift'></i> Registries
+                  </Link>
+                  <Link href="/wishlist" className={styles.sidebarNavItem}>
+                    <i className='bx bx-heart'></i> Wish List
+                  </Link>
+                  <Link href="/notifications" className={styles.sidebarNavItem}>
+                    <i className='bx bx-bell'></i> Notifications
+                  </Link>
+                  
+                  <div className={styles.sidebarNavLabel}>Account</div>
+                  <Link href="/address" className={styles.sidebarNavItem}>
+                    <i className='bx bx-map'></i> Address
+                  </Link>
+                  <Link href="/payment" className={styles.sidebarNavItem}>
+                    <i className='bx bx-wallet'></i> Payment Methods
+                  </Link>
+                  <Link href="/invite" className={styles.sidebarNavItem}>
+                    <i className='bx bx-user-plus'></i> Invite Friends
+                  </Link>
+                  <Link href="/profile" className={styles.sidebarNavItem}>
+                    <i className='bx bx-user'></i> Profile
+                  </Link>
+                  <Link href="/password" className={styles.sidebarNavItem}>
+                    <i className='bx bx-lock'></i> Password
+                  </Link>
+                  <Link href="/phone" className={styles.sidebarNavItem}>
+                    <i className='bx bx-phone'></i> Phone
+                  </Link>
+                  
+                  <div className={styles.sidebarNavLabel}>Support</div>
+                  <Link href="/chat" className={styles.sidebarNavItem}>
+                    <i className='bx bx-headphone'></i> Customer Service
+                  </Link>
+                  <Link href="/privacy" className={styles.sidebarNavItem}>
+                    <i className='bx bx-shield'></i> Privacy Policy
+                  </Link>
+                  <Link href="/login" className={styles.sidebarNavItem} style={{ color: 'var(--primary)' }}>
+                    <i className='bx bx-log-out'></i> Sign Out
+                  </Link>
+                </nav>
+              </div>
+            </aside>
+
+            {/* Dash Content */}
+            <div className={styles.dashContent}>
+              <div className={styles.pageHead}>
+                <div className={styles.pageTitle}>My Orders</div>
+                <div className={styles.pageSub}>View and manage all your orders, deliveries and payments.</div>
+              </div>
+
+              {/* Buy Again */}
+              {!isLoading && buyAgainItems.length > 0 && (
+                <div className={styles.buyAgainSection}>
+                  <div className={styles.buyAgainHeader}>
+                    <div className={styles.buyAgainTitle}>Buy Again</div>
+                    <Link href="/service-listing" className={styles.seeAll}>See all <i className='bx bx-chevron-right'></i></Link>
                   </div>
-
-                  <div className={styles.orderCardBody}>
-                    <div className={styles.orderInfoGrid}>
-                      <div>
-                        <span className={styles.orderInfoLabel}>Booking Date</span>
-                        <span className={styles.orderInfoValue}>{ord.order_date}</span>
-                      </div>
-                      <div>
-                        <span className={styles.orderInfoLabel}>Event Packages</span>
-                        <span className={styles.orderInfoValue}>{ord.items.length} services</span>
-                      </div>
-                      <div>
-                        <span className={styles.orderInfoLabel}>Payment Mode</span>
-                        <span className={styles.orderInfoValue}>COD / Installments</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.orderCardFooter}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Manage event slot updates via the coordinators support channel.
-                    </span>
-
-                    <div className={styles.orderFooterActions}>
-                      <Link href={`/orders/${ord.id}`} className={`${styles.btnSm} ${styles.btnSmGhost}`}>
-                        <i className="bx bx-receipt"></i> Details Invoice
+                  <div className={styles.buyAgainScroll}>
+                    {buyAgainItems.map((ba, i) => (
+                      <Link href={ba.endpointUri} className={styles.baCard} key={i}>
+                        <img className={styles.baImg} src={ba.imageUrl} alt={ba.itemName} />
+                        <div className={styles.baInfo}>
+                          <div className={styles.baName}>{ba.itemName}</div>
+                        </div>
                       </Link>
-                      
-                      {mainItem && !isCancelled && (
-                        <Link href={`/orders/${ord.id}/track/${mainItem.id}`} className={`${styles.btnSm} ${styles.btnSmPrimary}`}>
-                          <i className="bx bx-git-commit"></i> Live Track
-                        </Link>
-                      )}
-
-                      {isPending && (
-                        <button onClick={() => openCancelModal(ord)} className={`${styles.btnSm} ${styles.btnSmGhost} ${styles.btnSmGhostDanger}`}>
-                          Cancel Booking
-                        </button>
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
+              )}
 
-      {/* Booking Cancellation Request Modal */}
-      {cancelModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Cancel Booking Request</h3>
-              <button onClick={() => setCancelModalOpen(false)} className={styles.modalClose}>
-                <i className="bx bx-x"></i>
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Are you sure you want to request cancellation for booking Reference <strong>#{orders.find(o => o.id === cancellingOrderId)?.order_number}</strong>?
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, background: 'var(--primary-light)', padding: '8px', borderRadius: '4px' }}>
-                Note: Cancellation policies are dependent on vendor terms and booking timelines.
-              </p>
-              <button onClick={handleCancelSubmit} className={styles.btnCancelSubmit}>
-                Confirm Cancellation
-              </button>
+              {/* Status Tabs */}
+              <div className={styles.statusTabs}>
+                <button onClick={() => setActiveTab('all')} className={`${styles.statusTab} ${activeTab === 'all' ? styles.active : ''}`}>
+                  All <span className={styles.tabCount}>{orders.length}</span>
+                </button>
+                <button onClick={() => setActiveTab('active')} className={`${styles.statusTab} ${activeTab === 'active' ? styles.active : ''}`}>
+                  Active <span className={styles.tabCount}>{orders.filter(o => o.status.toLowerCase().includes('pending') || o.status.toLowerCase().includes('placed') || o.status_id === 1).length}</span>
+                </button>
+                <button onClick={() => setActiveTab('transit')} className={`${styles.statusTab} ${activeTab === 'transit' ? styles.active : ''}`}>
+                  In Transit <span className={styles.tabCount}>{orders.filter(o => o.status.toLowerCase().includes('transit')).length}</span>
+                </button>
+                <button onClick={() => setActiveTab('delivered')} className={`${styles.statusTab} ${activeTab === 'delivered' ? styles.active : ''}`}>
+                  Delivered <span className={styles.tabCount}>{orders.filter(o => o.status.toLowerCase().includes('complete') || o.status.toLowerCase().includes('delivered') || o.status_id === 4).length}</span>
+                </button>
+                <button onClick={() => setActiveTab('cancelled')} className={`${styles.statusTab} ${activeTab === 'cancelled' ? styles.active : ''}`}>
+                  Cancelled <span className={styles.tabCount}>{orders.filter(o => o.status.toLowerCase().includes('cancel') || o.status_id === 5).length}</span>
+                </button>
+              </div>
+
+              {/* Filter Row */}
+              <div className={styles.filterRow}>
+                <div className={styles.filterSearch}>
+                  <i className='bx bx-search'></i>
+                  <input type="text" placeholder="Search orders by name or #..." />
+                </div>
+                <div className={`${styles.filterChip} ${styles.active}`}>All</div>
+                <div className={styles.filterChip}>3 Months</div>
+                <div className={styles.filterChip}>6 Months</div>
+                <div className={styles.filterChip}>12 Months</div>
+                <div className={styles.filterChip}><i className='bx bx-calendar'></i> Custom</div>
+              </div>
+
+              {isLoading ? (
+                <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                  <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
+                  <p style={{ marginTop: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>Loading orders portfolio...</p>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <i className="bx bx-calendar-x" style={{ fontSize: '48px', color: 'var(--text-muted)' }}></i>
+                  <p style={{ marginTop: '14px', color: 'var(--text-secondary)', fontWeight: 600 }}>No bookings found matching filters.</p>
+                  <Link href="/" className={styles.btnSm} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: '16px', background: 'var(--primary)', color: '#fff', padding: '0 20px', height: '36px', borderRadius: '18px', textDecoration: 'none', fontWeight: 600 }}>
+                    Explore Services
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {filteredOrders.map((ord) => {
+                    return (
+                      <div key={ord.id} className={styles.orderCard} onClick={() => router.push(`/orders/${ord.id}`)}>
+                        <div className={styles.ocPad}>
+                          <div className={styles.ciHeader}>
+                            {ord.imageUrl ? (
+                              <img className={styles.ciImg} src={ord.imageUrl} alt={ord.packageName} />
+                            ) : (
+                              <div className={styles.ciImg} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--input-bg)' }}>
+                                <i className='bx bx-package' style={{ fontSize: '32px', color: 'var(--text-muted)' }}></i>
+                              </div>
+                            )}
+                            
+                            <div className={styles.ciHeadInfo}>
+                              <div className={styles.ciHeadTop}>
+                                <div className={styles.ciTitleBlock}>
+                                  <div className={styles.ciName}>{ord.packageName}</div>
+                                  <div className={styles.ciVendor}>
+                                    <i className='bx bx-store' style={{ fontSize: '13px' }}></i> {ord.vendorName}
+                                  </div>
+                                </div>
+                                <div className={styles.ciHeadBadges}>
+                                  <span className={`${styles.ciStatus} ${getStatusClass(ord.status)}`}>
+                                    <i className={getStatusIcon(ord.status)}></i>{ord.status}
+                                  </span>
+                                  {(ord.payment_status || '').toString().toLowerCase().includes('paid') && (
+                                    <span className={`${styles.ciStatus} ${styles.confirmed}`}>
+                                      <i className='bx bx-credit-card'></i>Booking Paid
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className={styles.ciMetaRow}>
+                                {ord.noOfGuests > 0 && <span className={styles.ciMeta}><i className='bx bx-group'></i>{ord.noOfGuests} Guests</span>}
+                                {ord.timeOfDayLabel && <span className={styles.ciMeta}><i className='bx bx-sun'></i>{ord.timeOfDayLabel}</span>}
+                                <span className={styles.ciMeta}><i className='bx bx-food-menu'></i>{ord.itemsCount} Items</span>
+                                <span className={styles.ciMeta}>
+                                  <i className='bx bx-package'></i>
+                                  {ord.deliverAs === 'package' ? 'Single Delivery' : 'Partial Delivery'}
+                                </span>
+                              </div>
+                              
+                              <div className={styles.ocDate}>
+                                <i className='bx bx-calendar'></i>Delivery: {ord.deliveryDate}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className={styles.ciContent}>
+                            <div className={styles.ciCarouselWrap}>
+                              <div className={styles.ciPhotoCarousel}>
+                                {ord.items.map((itm, idx) => (
+                                  <div className={styles.ciPhotoCard} key={idx}>
+                                    {itm.image_url ? (
+                                      <img src={itm.image_url} alt={itm.item_name} />
+                                    ) : (
+                                      <div style={{width: '104px', height: '84px', background: 'var(--input-bg)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px'}}>
+                                        <i className='bx bx-image' style={{fontSize: '24px', color: 'var(--text-muted)'}}></i>
+                                      </div>
+                                    )}
+                                    <div className={styles.ciPhotoName}>{itm.item_name}</div>
+                                    <div className={styles.ciPhotoVar}>{itm.variantName || 'Standard'}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className={`${styles.ocDelivMsg} ${ord.deliverAs === 'package' ? styles.same : styles.diff}`}>
+                              <i className={ord.deliverAs === 'package' ? 'bx bx-check-circle' : 'bx bx-info-circle'}></i>
+                              {ord.deliverAs === 'package' 
+                                  ? `All ${ord.itemsCount} items delivered on the same day` 
+                                  : `Items will be delivered in multiple shipments`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </main>
 
       <Footer />
     </>

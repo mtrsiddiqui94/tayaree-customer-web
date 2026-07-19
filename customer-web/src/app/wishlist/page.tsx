@@ -149,15 +149,28 @@ export default function WishlistPage() {
               const detailLink = `/${item.endpoint}/${item.slug}`;
               return (
                 <div key={idx} className={styles.card}>
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className={styles.cardImg}
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=350&q=80';
-                    }}
-                  />
+                  <div className={styles.cardImgWrap}>
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className={styles.cardImg}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=350&q=80';
+                      }}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRemoveLike(item);
+                      }}
+                      className={styles.wlHeart}
+                      title="Remove from wishlist"
+                    >
+                      <i className="bx bxs-heart"></i>
+                    </button>
+                  </div>
                   <div className={styles.cardInner}>
                     <h3 className={styles.cardTitle}>{item.name}</h3>
                     <span className={styles.cardVendor}>{item.item_name}</span>
@@ -172,9 +185,6 @@ export default function WishlistPage() {
                       <Link href={detailLink} className={styles.btnPrimary}>
                         Details
                       </Link>
-                      <button onClick={() => handleRemoveLike(item)} className={styles.btnRemove}>
-                        <i className="bx bx-trash"></i>
-                      </button>
                     </div>
                   </div>
                 </div>

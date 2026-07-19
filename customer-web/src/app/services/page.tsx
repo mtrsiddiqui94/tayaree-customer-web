@@ -20,17 +20,23 @@ export default function ServicesIndexPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  interface ApiStoreType {
+    id: number;
+    name?: string;
+    slug?: string;
+    endpoint_uri?: string;
+    endpointUri?: string;
+    image_url?: string;
+    imageUrl?: string;
+  }
 
   const loadCategories = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get<{ status: boolean; data: any[] }>('/api/v1/store-types/list')
+      const res = await api.get<{ status: boolean; data: ApiStoreType[] }>('/api/v1/store-types/list')
         .catch(() => ({ status: false, data: [] }));
 
-      const parsed: StoreType[] = (res.data || []).map((c: any) => ({
+      const parsed: StoreType[] = (res.data || []).map((c) => ({
         id: c.id,
         name: c.name || 'unset',
         slug: c.slug || 'unset',
@@ -59,6 +65,13 @@ export default function ServicesIndexPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadCategories();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredCategories = categories.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -95,9 +108,8 @@ export default function ServicesIndexPage() {
           </div>
         </div>
 
-        {/* Search filter */}
         <div className={styles.searchBarContainer}>
-          <i className="bx bx-search searchIcon"></i>
+          <i className={`bx bx-search ${styles.searchIcon}`}></i>
           <input
             type="text"
             placeholder="Search service categories (e.g. catering, venues...)"

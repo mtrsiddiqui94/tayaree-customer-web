@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -9,7 +9,6 @@ import styles from '../auth.module.css';
 
 interface ResetPasswordResponse {
   message: string;
-  [key: string]: any;
 }
 
 function ResetPasswordContent() {
@@ -23,57 +22,31 @@ function ResetPasswordContent() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-  const [pwStrength, setPwStrength] = useState(0);
-  const [strengthLabel, setStrengthLabel] = useState('8+ characters');
-  const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Field specific validation errors
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  // Redirect if no token is present
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid or expired password reset link. Please request a new code.');
-    }
-  }, [token]);
-
-  // Calculate password strength
-  useEffect(() => {
-    if (!password) {
-      setPwStrength(0);
-      setStrengthLabel('8+ characters');
-      return;
-    }
-
+  // Password strength calculations
+  const getPasswordStrength = (val: string) => {
+    if (!val) return { score: 0, label: '8+ characters' };
     let score = 0;
-    if (password.length >= 8) score++;
-    if (/[0-9]/.test(password) && /[a-zA-Z]/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password) && password.length >= 10) score++;
-
+    if (val.length >= 8) score++;
+    if (/[0-9]/.test(val) && /[a-zA-Z]/.test(val)) score++;
+    if (/[^a-zA-Z0-9]/.test(val) && val.length >= 10) score++;
     const finalScore = Math.max(1, score);
-    setPwStrength(finalScore);
-
     const labels = [
       '8+ characters',
       'a weak password',
       'a fair password',
       'a strong password',
     ];
-    setStrengthLabel(labels[finalScore] || '8+ characters');
-  }, [password]);
+    return { score: finalScore, label: labels[finalScore] || '8+ characters' };
+  };
 
-  // Check password matching
-  useEffect(() => {
-    if (!confirmPassword) {
-      setPasswordsMatch(null);
-      return;
-    }
-    setPasswordsMatch(password === confirmPassword);
-  }, [password, confirmPassword]);
+  const { score: pwStrength, label: strengthLabel } = getPasswordStrength(password);
+  const passwordsMatch = confirmPassword ? password === confirmPassword : null;
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -111,8 +84,6 @@ function ResetPasswordContent() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     // Trigger validations
     const isPasswordValid = validatePassword(password);
@@ -142,8 +113,9 @@ function ResetPasswordContent() {
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to reset password. Please try again.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to reset password. Please try again.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +136,7 @@ function ResetPasswordContent() {
             Set a new password.
           </div>
           <div className={styles.brandSub}>
-            Choose a strong password you haven't used before. You'll use it to
+            Choose a strong password you haven&apos;t used before. You&apos;ll use it to
             sign in from now on.
           </div>
           <div className={styles.brandFeats}>
@@ -315,7 +287,7 @@ function ResetPasswordContent() {
                       </>
                     ) : (
                       <>
-                        <i className="bx bx-x-circle"></i>Passwords don't match yet
+                        <i className="bx bx-x-circle"></i>Passwords don&apos;t match yet
                       </>
                     )}
                   </div>

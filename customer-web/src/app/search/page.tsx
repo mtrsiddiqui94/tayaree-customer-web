@@ -29,7 +29,7 @@ interface Service {
   location?: string;
   vendor_location?: string;
   area?: string;
-  [key: string]: any;
+  price_label?: string;
 }
 
 interface StoreType {
@@ -38,7 +38,6 @@ interface StoreType {
   slug: string;
   endpoint_uri: string;
   image_url: string;
-  [key: string]: any;
 }
 
 function SearchContent() {
@@ -68,41 +67,6 @@ function SearchContent() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const trendingChips = ['Catering', 'Banquets', 'Decorators', 'Mehndi', 'Portraits'];
 
-  // Load Store Types
-  useEffect(() => {
-    async function loadStoreTypes() {
-      try {
-        const res = await api.get<{ status: boolean; data: StoreType[] }>(
-          '/api/v1/store-types/list'
-        );
-        if (res.status && res.data) {
-          setStoreTypes(res.data);
-        }
-      } catch (e) {
-        console.error('Error fetching store types:', e);
-      }
-    }
-    loadStoreTypes();
-
-    // Load recent searches from localStorage
-    const saved = localStorage.getItem('recent_searches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
-  }, []);
-
-  // Update query state on URL change
-  useEffect(() => {
-    setSearchInputValue(queryParam);
-    setActiveQuery(queryParam);
-    if (queryParam) {
-      performSearch(queryParam);
-      saveSearchQuery(queryParam);
-    } else {
-      setServices([]);
-    }
-  }, [queryParam]);
-
   // API search call
   const performSearch = async (searchVal: string) => {
     setIsLoading(true);
@@ -128,11 +92,9 @@ function SearchContent() {
   const saveSearchQuery = (val: string) => {
     if (!val.trim()) return;
     const clean = val.trim();
-    setRecentSearches((prev) => {
-      const updated = [clean, ...prev.filter((s) => s !== clean)].slice(0, 5);
-      localStorage.setItem('recent_searches', JSON.stringify(updated));
-      return updated;
-    });
+    const updated = [clean, ...recentSearches.filter((s) => s !== clean)].slice(0, 5);
+    localStorage.setItem('recent_searches', JSON.stringify(updated));
+    setRecentSearches(updated);
   };
 
   const clearRecentSearches = () => {
@@ -140,6 +102,47 @@ function SearchContent() {
     setRecentSearches([]);
     showToast('Recent searches cleared.', 'info');
   };
+
+  // Load Store Types
+  useEffect(() => {
+    async function loadStoreTypes() {
+      try {
+        const res = await api.get<{ status: boolean; data: StoreType[] }>(
+          '/api/v1/store-types/list'
+        );
+        if (res.status && res.data) {
+          setStoreTypes(res.data);
+        }
+      } catch (e) {
+        console.error('Error fetching store types:', e);
+      }
+    }
+    loadStoreTypes();
+
+    // Load recent searches from localStorage
+    const saved = localStorage.getItem('recent_searches');
+    if (saved) {
+      const timer = setTimeout(() => {
+        setRecentSearches(JSON.parse(saved));
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Update query state on URL change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchInputValue(queryParam);
+      setActiveQuery(queryParam);
+      if (queryParam) {
+        performSearch(queryParam);
+        saveSearchQuery(queryParam);
+      } else {
+        setServices([]);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [queryParam]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,15 +179,22 @@ function SearchContent() {
     return isNaN(num) ? 0 : num;
   };
 
-  const formatPrice = (val: any) => {
+  const formatPrice = (val: string | number | undefined | null) => {
     if (val === undefined || val === null || val === '') return 'unset';
-    const valStr = val.toString();
-    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
-    if (/^\d+(\.\d+)?$/.test(valStr)) {
-      const parsedNum = parseFloat(valStr);
-      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    const valStr = val.toString().trim();
+    if (valStr === 'unset') return valStr;
+    let formatted = valStr.replace(/,/g, '').replace(/\b\d+\b/g, (match: string) => {
+      const num = parseInt(match, 10);
+      return num.toLocaleString('en-US');
+    });
+    if (!formatted.includes('PKR') && !formatted.includes('%') && !formatted.startsWith('/') && !formatted.includes('per')) {
+      if (formatted.toLowerCase().includes('starts from')) {
+        formatted = formatted.replace(/(starts from\s*)/i, '$1PKR ');
+      } else {
+        formatted = `PKR ${formatted}`;
+      }
     }
-    return `PKR ${valStr}`;
+    return formatted;
   };
 
   // Local filtering logic
@@ -492,7 +502,7 @@ function SearchContent() {
                   ) : (
                     <>
                       Showing <strong>{filteredServices.length}</strong> results for{' '}
-                      <strong>"{activeQuery}"</strong>
+                      <strong>&quot;{activeQuery}&quot;</strong>
                     </>
                   )}
                 </div>
@@ -547,7 +557,7 @@ function SearchContent() {
                         const discount = Number(svc.discount_percentage || svc.price_discount || 0);
                         const isVerified = svc.is_verified || svc.verified;
                         const displayLocation = svc.location || svc.vendor_location || svc.area;
-                        const displayPrice = svc.package_discounted_price || svc.discounted_price || svc.price || 'unset';
+                        const displayPrice = svc.price_label || svc.package_discounted_price || svc.discounted_price || svc.price || 'unset';
                         const isList = viewMode === 'list';
 
                         return (
@@ -608,15 +618,15 @@ function SearchContent() {
                                     </div>
                                   )}
                                 </div>
-                                <div className={styles.svcStars}>
-                                  <i className="bx bxs-star star"></i>
-                                  <span>
-                                    {svc.rating !== undefined && svc.rating !== null ? Number(svc.rating).toFixed(1) : 'unset'}
-                                  </span>
-                                  <span style={{ color: 'var(--text-muted)' }}>
-                                    ({svc.reviews_count || 0})
-                                  </span>
-                                </div>
+                                {svc.rating !== undefined && svc.rating !== null && Number(svc.rating) > 0 && (
+                                  <div className={styles.svcStars}>
+                                    <i className="bx bxs-star star"></i>
+                                    <span>{Number(svc.rating).toFixed(1)}</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>
+                                      ({svc.reviews_count || 0})
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </Link>

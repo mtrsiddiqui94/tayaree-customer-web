@@ -65,19 +65,24 @@ export default function ItemTrackingPage({ params }: { params: Promise<{ id: str
       const detailRes = await api.get<{ status: boolean; data: any }>(`/api/v1/order/items/${itemId}/tracking`);
       if (detailRes.status && detailRes.data) {
         const d = detailRes.data;
+        const orderDetail = d.order_detail || {};
+        const lineItemArray = d.line_item || [];
+        const firstItem = lineItemArray[0] || {};
+        const headingObj = firstItem.heading || {};
+
         setDetails({
-          orderItemId: d.order_item_id || d.orderItemId || itemId,
-          orderId: d.order_id || d.orderId || orderId,
-          orderDate: d.order_date || d.orderDate || 'unset',
-          isDelivered: d.is_delivered || d.isDelivered || 0,
-          info1Label: d.info1_label || d.info1Label || 'Delivery Slot',
-          info2Label: d.info2_label || d.info2Label || 'unset',
-          itemName: d.item_name || d.itemName || 'unset',
-          vendorName: d.vendor_name || d.vendorName || 'unset',
-          itemImage: d.item_image || d.itemImage || '',
-          shippingAddress: d.shipping_address || d.shippingAddress || 'unset',
-          statusId: d.status_id || d.statusId || 1,
-          createdAt: d.created_at || d.createdAt || 'unset',
+          orderItemId: firstItem.order_item_id || itemId,
+          orderId: firstItem.order_id || orderId,
+          orderDate: orderDetail.order_date || 'unset',
+          isDelivered: firstItem.is_delivered || 0,
+          info1Label: headingObj.info1_label || 'Delivery Slot',
+          info2Label: headingObj.info2_label || 'unset',
+          itemName: firstItem.item_name || 'unset',
+          vendorName: firstItem.vendor_name || 'unset',
+          itemImage: firstItem.image_url || '',
+          shippingAddress: d.shipping_address || 'unset',
+          statusId: firstItem.status_id || 1,
+          createdAt: firstItem.created_at || 'unset',
         });
       }
 

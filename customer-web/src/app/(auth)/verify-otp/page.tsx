@@ -18,7 +18,6 @@ interface VerifyOtpResponse {
       type: string;
     };
   };
-  [key: string]: any;
 }
 
 function VerifyOtpContent() {
@@ -33,8 +32,6 @@ function VerifyOtpContent() {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [countdown, setCountdown] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -64,7 +61,6 @@ function VerifyOtpContent() {
     if (cleanValue && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    setError('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -73,7 +69,6 @@ function VerifyOtpContent() {
       newOtp[index - 1] = '';
       setOtp(newOtp);
       inputRefs.current[index - 1]?.focus();
-      setError('');
     } else if (e.key === 'ArrowLeft' && index > 0) {
       inputRefs.current[index - 1]?.focus();
     } else if (e.key === 'ArrowRight' && index < 5) {
@@ -93,7 +88,6 @@ function VerifyOtpContent() {
 
     const focusIndex = Math.min(pasteData.length, 5);
     inputRefs.current[focusIndex]?.focus();
-    setError('');
   };
 
   const isOtpComplete = otp.every((digit) => digit !== '');
@@ -104,8 +98,6 @@ function VerifyOtpContent() {
     if (!isOtpComplete) return;
 
     setIsLoading(true);
-    setError('');
-    setSuccess('');
 
     const otpType = flow === 'reset' ? 'reset-password' : 'authentication';
 
@@ -134,8 +126,9 @@ function VerifyOtpContent() {
           showToast('Verification failed. Reset token not received.', 'error');
         }
       }
-    } catch (err: any) {
-      showToast(err.message || 'Invalid OTP code. Please check and try again.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Invalid OTP code. Please check and try again.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -145,8 +138,6 @@ function VerifyOtpContent() {
     if (countdown > 0) return;
 
     setIsLoading(true);
-    setError('');
-    setSuccess('');
 
     const otpType = flow === 'reset' ? 'reset-password' : 'authentication';
 
@@ -164,8 +155,9 @@ function VerifyOtpContent() {
       if (inputRefs.current[0]) {
         inputRefs.current[0].focus();
       }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to resend verification code. Please try again.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to resend verification code. Please try again.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -199,7 +191,7 @@ function VerifyOtpContent() {
           </div>
           <div className={styles.brandSub}>
             Enter the 6-digit code we just sent you. This keeps your account
-            safe and confirms it's really you.
+            safe and confirms it&apos;s really you.
           </div>
           <div className={styles.brandFeats}>
             <div className={styles.brandFeat}>
@@ -287,7 +279,7 @@ function VerifyOtpContent() {
             </form>
 
             <div className={styles.otpResend}>
-              Didn't get the code?{' '}
+              Didn&apos;t get the code?{' '}
               {countdown > 0 ? (
                 <a className={styles.off}>
                   Resend in <b>0:{countdown < 10 ? `0${countdown}` : countdown}</b>

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
@@ -29,7 +28,7 @@ interface Service {
   location?: string;
   vendor_location?: string;
   area?: string;
-  [key: string]: any;
+  price_label?: string;
 }
 
 interface PageProps {
@@ -37,7 +36,6 @@ interface PageProps {
 }
 
 export default function CategoryListingPage({ params }: PageProps) {
-  const router = useRouter();
   const { showToast } = useToast();
   const { category } = React.use(params);
 
@@ -53,15 +51,22 @@ export default function CategoryListingPage({ params }: PageProps) {
     ? category.charAt(0).toUpperCase() + category.slice(1)
     : 'Services';
 
-  const formatPrice = (val: any) => {
+  const formatPrice = (val: string | number | undefined | null) => {
     if (val === undefined || val === null || val === '') return 'unset';
-    const valStr = val.toString();
-    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
-    if (/^\d+(\.\d+)?$/.test(valStr)) {
-      const parsedNum = parseFloat(valStr);
-      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    const valStr = val.toString().trim();
+    if (valStr === 'unset') return valStr;
+    let formatted = valStr.replace(/,/g, '').replace(/\b\d+\b/g, (match: string) => {
+      const num = parseInt(match, 10);
+      return num.toLocaleString('en-US');
+    });
+    if (!formatted.includes('PKR') && !formatted.includes('%') && !formatted.startsWith('/') && !formatted.includes('per')) {
+      if (formatted.toLowerCase().includes('starts from')) {
+        formatted = formatted.replace(/(starts from\s*)/i, '$1PKR ');
+      } else {
+        formatted = `PKR ${formatted}`;
+      }
     }
-    return `PKR ${valStr}`;
+    return formatted;
   };
 
   useEffect(() => {
@@ -86,7 +91,7 @@ export default function CategoryListingPage({ params }: PageProps) {
       }
     }
     loadCategoryServices();
-  }, [category]);
+  }, [category, categoryTitle, showToast]);
 
   const clearAllFilters = () => {
     setMaxPriceLimit(300000);
@@ -264,7 +269,7 @@ export default function CategoryListingPage({ params }: PageProps) {
                       const discount = Number(svc.discount_percentage || svc.price_discount || 0);
                       const isVerified = svc.is_verified || svc.verified;
                       const displayLocation = svc.location || svc.vendor_location || svc.area;
-                      const displayPrice = svc.package_discounted_price || svc.discounted_price || svc.price || 'unset';
+                      const displayPrice = svc.price_label || svc.package_discounted_price || svc.discounted_price || svc.price || 'unset';
 
                       return (
                         <Link
@@ -320,15 +325,15 @@ export default function CategoryListingPage({ params }: PageProps) {
                                   </div>
                                 )}
                               </div>
-                              <div className={styles.svcStars}>
-                                <i className="bx bxs-star star"></i>
-                                <span>
-                                  {svc.rating !== undefined && svc.rating !== null ? Number(svc.rating).toFixed(1) : 'unset'}
-                                </span>
-                                <span style={{ color: 'var(--text-muted)' }}>
-                                  ({svc.reviews_count || 0})
-                                </span>
-                              </div>
+                              {svc.rating !== undefined && svc.rating !== null && Number(svc.rating) > 0 && (
+                                <div className={styles.svcStars}>
+                                  <i className="bx bxs-star star"></i>
+                                  <span>{Number(svc.rating).toFixed(1)}</span>
+                                  <span style={{ color: 'var(--text-muted)' }}>
+                                    ({svc.reviews_count || 0})
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </Link>

@@ -162,3 +162,14 @@
   align-items: center;
   gap: 2px;
 }
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 2;
+}

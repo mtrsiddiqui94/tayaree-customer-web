@@ -11,7 +11,6 @@ interface RegisterResponse {
   message: string;
   phone: string;
   phone_country: string;
-  [key: string]: any;
 }
 
 const formatPhoneNumber = (value: string) => {
@@ -26,28 +25,22 @@ export default function SignupPage() {
   
   // Input States
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Field Validation Errors
   const [fullNameError, setFullNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [agreeTermsError, setAgreeTermsError] = useState('');
-  const [error, setError] = useState('');
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setIsConfirmPasswordVisible(!isConfirmPasswordVisible);
   };
 
   // Validations
@@ -61,6 +54,20 @@ export default function SignupPage() {
       return false;
     }
     setFullNameError('');
+    return true;
+  };
+
+  const validateEmail = (value: string): boolean => {
+    if (!value.trim()) {
+      setEmailError('Email is required.');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) {
+      setEmailError('Please enter a valid email address.');
+      return false;
+    }
+    setEmailError('');
     return true;
   };
 
@@ -95,35 +102,21 @@ export default function SignupPage() {
     return true;
   };
 
-  const validateConfirmPassword = (value: string): boolean => {
-    if (!value) {
-      setConfirmPasswordError('Please confirm your password.');
-      return false;
-    }
-    if (value !== password) {
-      setConfirmPasswordError('Passwords do not match.');
-      return false;
-    }
-    setConfirmPasswordError('');
-    return true;
-  };
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setAgreeTermsError('');
 
     // Trigger validations
     const isNameValid = validateFullName(fullName);
+    const isEmailValid = validateEmail(email);
     const isPhoneValid = validatePhone(phone);
     const isPasswordValid = validatePassword(password);
-    const isConfirmValid = validateConfirmPassword(confirmPassword);
 
     if (!agreeTerms) {
       setAgreeTermsError('You must agree to the terms and privacy policy.');
     }
 
-    if (!isNameValid || !isPhoneValid || !isPasswordValid || !isConfirmValid || !agreeTerms) {
+    if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !agreeTerms) {
       return;
     }
 
@@ -142,10 +135,11 @@ export default function SignupPage() {
 
       await api.post<RegisterResponse>('/api/v1/auth/register', {
         full_name: fullName.trim(),
+        email: email.trim(),
         phone: fullPhoneNumber,
         phone_country: 'PK',
         password: password,
-        password_confirmation: confirmPassword,
+        password_confirmation: password,
       });
 
       // Redirect to OTP verification on success
@@ -155,8 +149,9 @@ export default function SignupPage() {
           fullPhoneNumber
         )}&country=PK&flow=signup`
       );
-    } catch (err: any) {
-      showToast(err.message || 'Registration failed. Please try again.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -219,9 +214,9 @@ export default function SignupPage() {
             <div className={styles.authIcon}>
               <i className="bx bx-user-plus"></i>
             </div>
-            <h1 className={styles.authTitle}>Create Account</h1>
+            <h1 className={styles.authTitle}>Create your account</h1>
             <p className={styles.authSub}>
-              Find and book the top event service packages in Pakistan.
+              Join Tayaree to plan events and shop with trusted vendors.
             </p>
 
             <form onSubmit={handleSignup} noValidate>
@@ -235,7 +230,7 @@ export default function SignupPage() {
                   <i className="bx bx-user lead"></i>
                   <input
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="e.g. Adnan Siddiqui"
                     value={fullName}
                     onChange={(e) => {
                       setFullName(e.target.value);
@@ -248,6 +243,32 @@ export default function SignupPage() {
                 </div>
                 {fullNameError && (
                   <span className={styles.fldErrorMsg}>{fullNameError}</span>
+                )}
+              </div>
+
+              <div className={styles.fld}>
+                <label className={styles.fldLbl}>Email</label>
+                <div
+                  className={`${styles.fldWrap} ${
+                    emailError ? styles.fldWrapError : ''
+                  }`}
+                >
+                  <i className="bx bx-envelope lead"></i>
+                  <input
+                    type="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) validateEmail(e.target.value);
+                    }}
+                    onBlur={(e) => validateEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                {emailError && (
+                  <span className={styles.fldErrorMsg}>{emailError}</span>
                 )}
               </div>
 
@@ -308,41 +329,6 @@ export default function SignupPage() {
                 </div>
                 {passwordError && (
                   <span className={styles.fldErrorMsg}>{passwordError}</span>
-                )}
-              </div>
-
-              <div className={styles.fld}>
-                <label className={styles.fldLbl}>Confirm Password</label>
-                <div
-                  className={`${styles.fldWrap} ${
-                    confirmPasswordError ? styles.fldWrapError : ''
-                  }`}
-                >
-                  <i className="bx bx-lock-alt lead"></i>
-                  <input
-                    type={isConfirmPasswordVisible ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (confirmPasswordError)
-                        validateConfirmPassword(e.target.value);
-                    }}
-                    onBlur={(e) => validateConfirmPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
-                  <i
-                    className={`bx fld-eye ${
-                      isConfirmPasswordVisible ? 'bx-show' : 'bx-hide'
-                    }`}
-                    onClick={toggleConfirmPasswordVisibility}
-                  ></i>
-                </div>
-                {confirmPasswordError && (
-                  <span className={styles.fldErrorMsg}>
-                    {confirmPasswordError}
-                  </span>
                 )}
               </div>
 

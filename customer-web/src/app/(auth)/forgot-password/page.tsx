@@ -9,7 +9,6 @@ import styles from '../auth.module.css';
 
 interface OtpRequestResponse {
   message: string;
-  [key: string]: any;
 }
 
 const formatPhoneNumber = (value: string) => {
@@ -24,8 +23,6 @@ export default function ForgotPasswordPage() {
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const validatePhone = (value: string): boolean => {
     const clean = value.replace(/[^0-9]/g, '').trim();
@@ -47,8 +44,6 @@ export default function ForgotPasswordPage() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     // Trigger validation
     const isPhoneValid = validatePhone(phone);
@@ -84,8 +79,9 @@ export default function ForgotPasswordPage() {
           fullPhoneNumber
         )}&country=PK&flow=reset`
       );
-    } catch (err: any) {
-      showToast(err.message || 'Failed to send verification code. Please try again.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to send verification code. Please try again.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +102,7 @@ export default function ForgotPasswordPage() {
             No problem.
           </div>
           <div className={styles.brandSub}>
-            We'll send a one-time verification code to your email or phone so
+            We&apos;ll send a one-time verification code to your email or phone so
             you can set a new password securely.
           </div>
           <div className={styles.brandFeats}>
@@ -148,7 +144,7 @@ export default function ForgotPasswordPage() {
             </div>
             <h1 className={styles.authTitle}>Forgot password?</h1>
             <p className={styles.authSub}>
-              Enter the phone linked to your account and we'll send a
+              Enter the phone linked to your account and we&apos;ll send a
               verification code.
             </p>
 
@@ -184,7 +180,7 @@ export default function ForgotPasswordPage() {
               <div className={styles.infoNote}>
                 <i className="bx bx-info-circle"></i>
                 <span>
-                  For your security, we'll never show whether an account exists.
+                  For your security, we&apos;ll never show whether an account exists.
                   If it does, a code is on its way.
                 </span>
               </div>

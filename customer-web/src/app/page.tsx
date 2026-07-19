@@ -28,7 +28,13 @@ interface Service {
   location?: string;
   vendor_location?: string;
   area?: string;
-  [key: string]: any;
+  price_label?: string;
+  info1_label?: string;
+  info2_label?: string;
+  customer_liked?: number;
+  customerLiked?: number;
+  endpoint_like_uri?: string;
+  endpointLikeUri?: string;
 }
 
 interface Category {
@@ -36,7 +42,6 @@ interface Category {
   endpoint_uri: string;
   image_url?: string;
   body: Service[];
-  [key: string]: any;
 }
 
 interface PromoBanner {
@@ -46,29 +51,62 @@ interface PromoBanner {
   badge_text: string;
   promo_text: string;
   image_url: string;
-  [key: string]: any;
 }
 
 export default function HomePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
   const [promotions, setPromotions] = useState<PromoBanner[]>([]);
   const [heroSearch, setHeroSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const formatPrice = (val: any) => {
-    if (val === undefined || val === null || val === '') return 'unset';
-    const valStr = val.toString();
-    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
-    if (/^\d+(\.\d+)?$/.test(valStr)) {
-      const parsedNum = parseFloat(valStr);
-      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+  const getIconClass = (uri: string) => {
+    const slug = uri.split('/').pop() || '';
+    switch (slug) {
+      case 'venue': return 'bx-building';
+      case 'catering': return 'bx-dish';
+      case 'decor': return 'bx-palette';
+      case 'mehndi': return 'bx-spa';
+      case 'photography': return 'bx-camera';
+      case 'mithai-walay': return 'bx-cookie';
+      case 'tour-operators': return 'bx-map-alt';
+      case 'clothing': return 'bx-closet';
+      case 'beauty': return 'bx-cut';
+      case 'dj': return 'bx-music';
+      case 'transport': return 'bx-car';
+      case 'furniture': return 'bx-chair';
+      case 'tent': return 'bx-home-heart';
+      case 'bedding': return 'bx-bed';
+      case 'invitations': return 'bx-envelope';
+      default: return 'bx-grid-alt';
     }
-    return `PKR ${valStr}`;
+  };
+
+  const formatPrice = (val: string | number | undefined | null) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString().trim();
+    if (valStr === 'unset') return valStr;
+    let formatted = valStr.replace(/,/g, '').replace(/\b\d+\b/g, (match: string) => {
+      const num = parseInt(match, 10);
+      return num.toLocaleString('en-US');
+    });
+    if (!formatted.includes('PKR') && !formatted.includes('%') && !formatted.startsWith('/') && !formatted.includes('per')) {
+      if (formatted.toLowerCase().includes('starts from')) {
+        formatted = formatted.replace(/(starts from\s*)/i, '$1PKR ');
+      } else {
+        formatted = `PKR ${formatted}`;
+      }
+    }
+    return formatted;
   };
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const timer = setTimeout(() => {
+      setIsLoggedIn(!!token);
+    }, 0);
+
     async function loadHomeData() {
       try {
         setIsLoading(true);
@@ -97,6 +135,7 @@ export default function HomePage() {
     }
 
     loadHomeData();
+    return () => clearTimeout(timer);
   }, []);
 
   const handleHeroSearchSubmit = (e: React.FormEvent) => {
@@ -106,8 +145,49 @@ export default function HomePage() {
     }
   };
 
-  // Get currently active services
-  const activeServices = categories[activeCategoryIdx]?.body || [];
+  const handleLikeClick = async (e: React.MouseEvent, categoryIndex: number, serviceIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.push('/login?redirect=/');
+      return;
+    }
+
+    const cat = categories[categoryIndex];
+    const svc = cat.body[serviceIndex];
+
+    const currentLiked = svc.customer_liked === 1 || svc.customerLiked === 1;
+    const newLikedStatus = currentLiked ? 0 : 1;
+
+    // Optimistically update
+    const updatedCategories = [...categories];
+    updatedCategories[categoryIndex].body[serviceIndex] = {
+      ...svc,
+      customer_liked: newLikedStatus,
+      customerLiked: newLikedStatus,
+    };
+    setCategories(updatedCategories);
+
+    try {
+      const endpoint = svc.endpoint_like_uri || svc.endpointLikeUri || `services/${svc.slug || 'venue'}/${svc.service_id}/options-like`;
+      await api.post(`/api/v1/${endpoint}`, {
+        status: newLikedStatus
+      });
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      // Rollback
+      const rollbackCategories = [...categories];
+      rollbackCategories[categoryIndex].body[serviceIndex] = {
+        ...svc,
+        customer_liked: currentLiked ? 1 : 0,
+        customerLiked: currentLiked ? 1 : 0,
+      };
+      setCategories(rollbackCategories);
+    }
+  };
+
 
   return (
     <>
@@ -119,9 +199,9 @@ export default function HomePage() {
         <div className={styles.heroOverlay}></div>
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>
-            <i className="bx bx-award"></i>Pakistan's #1 Event Booking Portal
+            <i className="bx bx-award"></i>Pakistan&apos;s #1 Event Booking Portal
           </div>
-          <h1 className={styles.heroH1}>Pakistan's Premier</h1>
+          <h1 className={styles.heroH1}>Pakistan&apos;s Premier</h1>
           <h2 className={styles.heroH1Sub}>Event Marketplace</h2>
           <p className={styles.heroBody}>
             Find and book the top event venues, caterers, decorators, mehndi artists,
@@ -147,20 +227,22 @@ export default function HomePage() {
             </button>
           </form>
 
-          <div className={styles.heroStats}>
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatNum}>unset</div>
-              <div className={styles.heroStatLabel}>Vetted Vendors</div>
+          {isLoggedIn && (
+            <div className={styles.heroStats}>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>unset</div>
+                <div className={styles.heroStatLabel}>Vetted Vendors</div>
+              </div>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>unset</div>
+                <div className={styles.heroStatLabel}>Successful Events</div>
+              </div>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>unset</div>
+                <div className={styles.heroStatLabel}>Customer Rating</div>
+              </div>
             </div>
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatNum}>unset</div>
-              <div className={styles.heroStatLabel}>Successful Events</div>
-            </div>
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatNum}>unset</div>
-              <div className={styles.heroStatLabel}>Customer Rating</div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -204,115 +286,122 @@ export default function HomePage() {
         </section>
 
         {/* SERVICE CATEGORIES SECTION */}
-        <section className={styles.catSection}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Explore Event Services</h2>
-            <Link href="/services" className={styles.sectionLink}>
-              View All Services
-            </Link>
-          </div>
+        {isLoggedIn && (
+          <section className={styles.catSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Explore Event Services</h2>
+              <Link href="/services" className={styles.sectionLink}>
+                View All Services
+              </Link>
+            </div>
 
-          {isLoading ? (
-            <div className={styles.loadingText}>Loading services...</div>
-          ) : (
-            <>
-              {/* Category Pills/Tabs */}
-              <div className={styles.catPills}>
-                {categories.map((cat, idx) => (
-                  <button
-                    key={idx}
-                    className={`${styles.catPill} ${
-                      activeCategoryIdx === idx ? styles.catPillActive : ''
-                    }`}
-                    onClick={() => setActiveCategoryIdx(idx)}
-                  >
-                    <span>{cat.heading}</span>
-                  </button>
-                ))}
-              </div>
+            {isLoading ? (
+              <div className={styles.loadingText}>Loading services...</div>
+            ) : (
+              categories.map((cat, catIdx) => {
+                const services = cat.body || [];
+                if (services.length === 0) return null;
 
-              {/* Service Cards Grid */}
-              <div className={styles.serviceGrid} style={{ marginTop: '24px' }}>
-                {activeServices.length > 0 ? (
-                  activeServices.map((service, idx) => {
-                    const discount = Number(service.discount_percentage || service.price_discount || 0);
-                    const isVerified = service.is_verified || service.verified;
-                    const displayLocation = service.location || service.vendor_location || service.area;
-                    const displayPrice = formatPrice(service.price_label || service.package_discounted_price || service.discounted_price || service.price || 'unset');
-                    const displayName = service.name || service.info1_label || 'unset';
-                    const displaySubtitle = service.item_name || service.info2_label || 'unset';
-
-                    return (
-                      <Link
-                        href={`/${service.endpoint}/${service.slug}`}
-                        key={idx}
-                        className={styles.serviceCard}
-                      >
-                        <div className={styles.scImgWrap}>
-                          <img
-                            src={service.image_url}
-                            alt={displayName}
-                            onError={(e) => {
-                              // Fallback image if source fails
-                              e.currentTarget.src =
-                                'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=400&q=80';
-                            }}
-                          />
-                          {discount > 0 && (
-                            <span className={styles.scBadge}>
-                              {discount.toFixed(0)}% OFF
-                            </span>
-                          )}
-                          <span className={styles.scHeart}>
-                            <i className="bx bx-heart"></i>
-                          </span>
-                          {isVerified && (
-                            <span className={styles.scVerified}>
-                              <i className="bx bxs-badge-check"></i>Verified
-                            </span>
-                          )}
+                return (
+                  <div key={catIdx} className={styles.catRow}>
+                    <div className={styles.catRowHead}>
+                      <div className={styles.catRowMeta}>
+                        <div className={styles.catRowIcon}>
+                          <i className={`bx ${getIconClass(cat.endpoint_uri)}`}></i>
                         </div>
-                        <div className={styles.scBody}>
-                          <div className={styles.scName}>{displayName}</div>
-                          <span className={styles.scVendor}>
-                            {displaySubtitle}
-                            {displayLocation ? ` · ${displayLocation}` : ''}
-                          </span>
-                          <div className={styles.scPriceRow}>
-                            <div className={styles.scPrice}>
-                              {displayPrice}
-                            </div>
-                            {discount > 0 && service.original_price && (
-                              <div className={styles.scOld}>
-                                <s>{formatPrice(service.original_price)}</s>
-                              </div>
-                            )}
-                          </div>
-                          <div className={styles.scStars}>
-                            <i className="bx bxs-star"></i>
-                            <span>
-                              {service.rating !== undefined && service.rating !== null ? Number(service.rating).toFixed(1) : 'unset'}
-                            </span>
-                            <span className={styles.count}>
-                              ({service.reviews_count || 0})
-                            </span>
-                          </div>
+                        <div>
+                          <h3 className={styles.catRowTitle}>{cat.heading}</h3>
+                          <p className={styles.catRowSub}>
+                            {services.length} vendors &middot; Lahore, Karachi &amp; Islamabad
+                          </p>
                         </div>
+                      </div>
+                      <Link href={`/services/${cat.endpoint_uri}`} className={styles.catRowSeeAll}>
+                        View all {services.length} vendors &rarr;
                       </Link>
-                    );
-                  })
-                ) : (
-                  <div className={styles.emptyText}>
-                    No recommendation items found for this category.
+                    </div>
+
+                    <div className={styles.scrollRow}>
+                      {services.map((service, svcIdx) => {
+                        const discount = Number(service.discount_percentage || service.price_discount || 0);
+                        const isVerified = service.is_verified || service.verified;
+                        const displayLocation = service.location || service.vendor_location || service.area;
+                        const displayPrice = formatPrice(service.price_label || service.package_discounted_price || service.discounted_price || service.price || 'unset');
+                        const displayName = service.name || service.info1_label || 'unset';
+                        const displaySubtitle = service.item_name || service.info2_label || 'unset';
+                        const isLiked = service.customer_liked === 1 || service.customerLiked === 1;
+
+                        return (
+                          <Link
+                            href={`/${service.endpoint}/${service.slug}`}
+                            key={svcIdx}
+                            className={styles.serviceCard}
+                          >
+                            <div className={styles.scImgWrap}>
+                              <img
+                                src={service.image_url}
+                                alt={displayName}
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=400&q=80';
+                                }}
+                              />
+                              {discount > 0 && (
+                                <span className={styles.scBadge}>
+                                  {discount.toFixed(0)}% OFF
+                                </span>
+                              )}
+                              <span
+                                onClick={(e) => handleLikeClick(e, catIdx, svcIdx)}
+                                className={`${styles.scHeart} ${isLiked ? styles.scHeartLiked : ''}`}
+                              >
+                                <i className={isLiked ? "bx bxs-heart" : "bx bx-heart"}></i>
+                              </span>
+                              {isVerified && (
+                                <span className={styles.scVerified}>
+                                  <i className="bx bxs-badge-check"></i>Verified
+                                </span>
+                              )}
+                            </div>
+                            <div className={styles.scBody}>
+                              <div className={styles.scName}>{displayName}</div>
+                              <span className={styles.scVendor}>
+                                {displaySubtitle}
+                                {displayLocation ? ` · ${displayLocation}` : ''}
+                              </span>
+                              <div className={styles.scPriceRow}>
+                                <div className={styles.scPrice}>
+                                  {displayPrice}
+                                </div>
+                                {discount > 0 && service.original_price && (
+                                  <div className={styles.scOld}>
+                                    <s>{formatPrice(service.original_price)}</s>
+                                  </div>
+                                )}
+                              </div>
+                              {service.rating !== undefined && service.rating !== null && (
+                                <div className={styles.scStars}>
+                                  <i className="bx bxs-star"></i>
+                                  <span>{Number(service.rating).toFixed(1)}</span>
+                                  <span className={styles.count}>
+                                    ({service.reviews_count || 0})
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
-              </div>
-            </>
-          )}
-        </section>
+                );
+              })
+            )}
+          </section>
+        )}
 
         {/* PROMO BANNER SECTION */}
-        {promotions.length > 0 && (
+        {isLoggedIn && promotions.length > 0 && (
           <section className={styles.promoBanner}>
             <div className={styles.promoLeft}>
               <div className={styles.promoPill}>

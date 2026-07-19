@@ -31,6 +31,11 @@ interface Order {
   contact_email?: string;
   contact_phone?: string;
   items: OrderItem[];
+  packageName?: string;
+  vendorName?: string;
+  imageUrl?: string;
+  orderPackageLineId?: number;
+  category?: string;
 }
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,37 +61,61 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     loadOrderDetail();
   }, [orderId]);
 
+  const formatPrice = (val: any) => {
+    if (val === undefined || val === null || val === '') return 'unset';
+    const valStr = val.toString();
+    if (valStr.includes('PKR') || valStr === 'unset') return valStr;
+    if (/^\d+(\.\d+)?$/.test(valStr)) {
+      const parsedNum = parseFloat(valStr);
+      return `PKR ${parsedNum.toLocaleString('en-US')}`;
+    }
+    return `PKR ${valStr}`;
+  };
+
   const loadOrderDetail = async () => {
     try {
       setIsLoading(true);
-      // Fetch user orders list
       const res = await api.get<{ status: boolean; data: any[] }>('/api/v1/order/list?limit=50&page=1');
       if (res.status && res.data) {
-        const found = res.data.find((ord: any) => ord.id === orderId);
+        let found: any = null;
+        for (const section of res.data) {
+          const bodyList = section.body || [];
+          const match = bodyList.find((ord: any) => ord.order_id === orderId);
+          if (match) {
+            found = match;
+            break;
+          }
+        }
+
         if (found) {
-          const ordItems: OrderItem[] = (found.items || found.packages || []).map((itm: any) => ({
-            id: itm.id || itm.order_item_id || 0,
-            name: itm.name || itm.service_name || 'unset',
+          const ordItems: OrderItem[] = (found.items || []).map((itm: any) => ({
+            id: itm.item_id || 0,
+            name: itm.item_name || 'unset',
             item_name: itm.item_name || 'unset',
-            price: itm.price || itm.item_price || 'unset',
-            quantity: itm.quantity || 1,
-            image_url: itm.image_url || itm.imageUrl || '',
-            status: itm.status || itm.status_name || 'Booked',
-            location: itm.location || itm.vendor_location || itm.area || 'unset',
+            price: itm.price || 'unset',
+            quantity: found.quantity || 1,
+            image_url: itm.image_url || '',
+            status: itm.item_status || 'Booked',
+            location: found.delivery_date || 'unset',
           }));
 
           setOrder({
-            id: found.id,
-            order_number: found.order_number || found.orderNumber || 'unset',
-            order_date: found.order_date || found.orderDate || 'unset',
-            total_amount: found.total_amount || found.totalAmount || 'unset',
-            status: found.status || found.status_name || 'unset',
-            status_id: found.status_id || 1,
-            payment_status: found.payment_status || found.paymentStatus || 'unset',
-            shipping_address: found.shipping_address || found.address || 'unset',
-            contact_email: found.contact_email || found.email || 'unset',
-            contact_phone: found.contact_phone || found.phone || 'unset',
+            id: found.order_id,
+            order_number: found.order_number || found.order_package_line_id?.toString() || `ORD-${found.order_id}`,
+            order_date: found.booking_date || found.delivery_date || 'unset',
+            total_amount: formatPrice(found.rate_per_head || found.per_head_amount || found.total_amount),
+            status: found.package_status || 'unset',
+            status_id: 1,
+            payment_status: found.payment_status || found.payment_status_text || 'unset',
+            shipping_address: found.shipping_address || 'unset',
+            contact_email: found.contact_email || 'unset',
+            contact_phone: found.contact_phone || 'unset',
             items: ordItems,
+            packageName: found.package_name || 'unset',
+            vendorName: found.vendor_name || 'unset',
+            imageUrl: found.image_url || '',
+            orderPackageLineId: found.order_package_line_id || 0,
+            category: found.endpoint?.split('/')[1] || 'catering',
           });
         } else {
           showToast('Order reference details not found.', 'error');
@@ -185,13 +214,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         <Link href={`/orders/${order.id}/track/${item.id}`} className={styles.actionLink} style={{ fontSize: '11px' }}>
                           Track Service Timeline
                         </Link>
+                        {order.orderPackageLineId && order.orderPackageLineId > 0 && (
+                          <Link href={`/services/${order.category || 'catering'}/packages/${order.orderPackageLineId}?order_id=${order.id}`} className={styles.actionLink} style={{ fontSize: '11px', color: 'var(--primary)' }}>
+                            View Package Details
+                          </Link>
+                        )}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>
-                        {item.price}
-                      </span>
-                    </div>
+                    {item.price && item.price !== 'unset' && (
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>
+                          {item.price}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

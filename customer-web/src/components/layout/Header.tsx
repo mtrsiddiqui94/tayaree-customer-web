@@ -62,30 +62,58 @@ export default function Header() {
           >
             Home
           </Link>
-          <Link
-            href="/deals"
-            className={`${styles.navLink} ${
-              pathname === '/deals' ? styles.navLinkActive : ''
-            }`}
-          >
-            Deals
-          </Link>
-          <Link
-            href="/events"
-            className={`${styles.navLink} ${
-              pathname === '/events' ? styles.navLinkActive : ''
-            }`}
-          >
-            My Events
-          </Link>
-          <Link
-            href="/gift-registry"
-            className={`${styles.navLink} ${
-              pathname.startsWith('/gift-registry') ? styles.navLinkActive : ''
-            }`}
-          >
-            Gift Registry
-          </Link>
+          {isLoggedIn && (
+            <>
+              <Link
+                href="/services"
+                className={`${styles.navLink} ${
+                  pathname.startsWith('/services') ? styles.navLinkActive : ''
+                }`}
+              >
+                Packages
+              </Link>
+              <Link
+                href="/deals"
+                className={`${styles.navLink} ${
+                  pathname === '/deals' ? styles.navLinkActive : ''
+                }`}
+              >
+                Deals
+              </Link>
+              <Link
+                href="/events"
+                className={`${styles.navLink} ${
+                  pathname.startsWith('/events') ? styles.navLinkActive : ''
+                }`}
+              >
+                Events
+              </Link>
+              <Link
+                href="/quotes"
+                className={`${styles.navLink} ${
+                  pathname.startsWith('/quotes') ? styles.navLinkActive : ''
+                }`}
+              >
+                Quotes
+              </Link>
+              <Link
+                href="/registry"
+                className={`${styles.navLink} ${
+                  pathname.startsWith('/registry') ? styles.navLinkActive : ''
+                }`}
+              >
+                Registry
+              </Link>
+              <Link
+                href="/orders"
+                className={`${styles.navLink} ${
+                  pathname.startsWith('/orders') ? styles.navLinkActive : ''
+                }`}
+              >
+                My Orders
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* ACTIONS */}
@@ -108,6 +136,9 @@ export default function Header() {
               >
                 <i className="bx bx-bell"></i>
                 <span className={styles.iconBadge}>5</span>
+              </Link>
+              <Link href="/cart" className={styles.iconBtn} title="Cart">
+                <i className="bx bx-cart"></i>
               </Link>
               <Link href="/chat" className={styles.iconBtn} title="Messages">
                 <i className="bx bx-message-square-detail"></i>

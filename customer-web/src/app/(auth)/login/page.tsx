@@ -18,7 +18,6 @@ interface LoginResponse {
       type: string;
     };
   };
-  [key: string]: any;
 }
 
 const formatPhoneNumber = (value: string) => {
@@ -39,7 +38,6 @@ export default function LoginPage() {
   // Validation States
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [error, setError] = useState('');
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -79,7 +77,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     // Trigger field validations
     const isPhoneValid = validatePhone(phone);
@@ -125,8 +122,9 @@ export default function LoginPage() {
       } else {
         showToast(response.message || 'Login failed. Please try again.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message || 'Incorrect phone number or password.', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Incorrect phone number or password.';
+      showToast(errMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -300,7 +298,7 @@ export default function LoginPage() {
             </div>
 
             <div className={styles.authFoot}>
-              Don't have an account? <Link href="/signup">Sign up</Link>
+              Don&apos;t have an account? <Link href="/signup">Sign up</Link>
             </div>
             <div className={styles.authLegal}>
               By signing in you agree to our <a href="#">Terms</a> and{' '}

@@ -24,13 +24,16 @@ export default function OrderConfirmedPage() {
       router.push('/');
       return;
     }
-    try {
-      const parsed = JSON.parse(raw);
-      setConfirmation(parsed);
-    } catch (e) {
-      router.push('/');
-    }
-  }, []);
+    const timer = setTimeout(() => {
+      try {
+        const parsed = JSON.parse(raw);
+        setConfirmation(parsed);
+      } catch {
+        router.push('/');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   if (!confirmation) {
     return (

@@ -1,0 +1,125 @@
+.page {
+  max-width: 600px;
+  margin: 60px auto 100px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.card {
+  background: var(--card, #fff);
+  border-radius: 18px;
+  border: 1px solid var(--border, #E4E4E4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  padding: 40px 30px;
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(26, 122, 54, 0.1);
+  color: #1A7A36;
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 30px;
+}
+
+.detailsBlock {
+  background: var(--surface, #F7F7F7);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.detailRow:last-child {
+  margin-bottom: 0;
+  border-top: 1.5px solid var(--border, #E4E4E4);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.detailLabel {
+  color: var(--text-secondary, #666);
+}
+
+.detailVal {
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.detailVal.highlight {
+  color: #D71921;
+}
+
+.btnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 480px) {
+  .btnGroup {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.primaryBtn {
+  background: #D71921;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+
+.primaryBtn:hover {
+  background: #A80E14;
+}
+
+.secondaryBtn {
+  background: transparent;
+  color: var(--text-primary, #111);
+  border: 1.5px solid var(--border, #E4E4E4);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-decoration: none;
+}
+
+.secondaryBtn:hover {
+  background: var(--surface, #F7F7F7);
+  border-color: var(--text-primary, #111);
+}

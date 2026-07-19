@@ -1,0 +1,159 @@
+.card {
+  background: var(--card);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.cardInner {
+  padding: 22px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cardTitle i {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.cardSub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.phoneCurrent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.phoneIc {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.phoneNum {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.phoneVerified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--success);
+  margin-top: 2px;
+}
+
+.phoneVerified i {
+  font-size: 14px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+.fld {
+  margin-bottom: 16px;
+}
+
+.fldLbl {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  display: block;
+}
+
+.fldWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 0 12px;
+}
+
+.fldWrap:focus-within {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.fldPrefix {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1.5px solid var(--border);
+  padding-right: 10px;
+  margin-right: 2px;
+  user-select: none;
+}
+
+.fldWrap input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 12px 0;
+  color: var(--text-primary);
+}
+
+.btnSave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 26px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  margin-top: 6px;
+  transition: all 0.15s ease;
+}
+
+.btnSave:hover {
+  background: var(--primary-dark);
+}
+
+.btnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
