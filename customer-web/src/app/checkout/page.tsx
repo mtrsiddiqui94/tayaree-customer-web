@@ -82,7 +82,7 @@ export default function CheckoutPage() {
   
   // Checkout selections states
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'cod'>('cod');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'cod'>('card');
   const [creditCards, setCreditCards] = useState<any[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   
@@ -456,15 +456,18 @@ export default function CheckoutPage() {
       const paymentMethodId = selectedPaymentMethod === 'card' ? '1' : '2'; // 1 for card, 2 for COD
       const cardId = selectedPaymentMethod === 'card' ? (selectedCardId ? selectedCardId.toString() : '0') : '0';
 
-      const payload = {
-        payment_method_id: paymentMethodId,
+      const payload: any = {
+        payment_method_id: (summary.shippingMethodId || 1).toString(), // The flutter app maps shippingMethodId to payment_method_id for the API
         card_id: cardId,
         address_id: selectedAddressId.toString(),
         cart_id: summary.cartId.toString(),
         contact_email: contactEmail.trim(),
-        contact_phone: contactPhone.replace('-', ''), // pass pure digit format
-        delivery_instructions: deliveryInstructions.trim(),
+        contact_phone: contactPhone.replace(/-/g, ''), // pass pure digit format
       };
+
+      if (deliveryInstructions.trim().length > 0) {
+        payload.delivery_instructions = deliveryInstructions.trim();
+      }
 
       const res = await api.post<{ status: boolean; data: any; message?: string }>('/api/v1/checkout', payload);
       

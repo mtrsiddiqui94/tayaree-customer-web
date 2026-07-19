@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
-import styles from '../orders.module.css';
+import styles from './orderDetail.module.css';
 
 interface OrderItem {
   id: number;
@@ -16,6 +16,7 @@ interface OrderItem {
   quantity: number;
   image_url: string;
   status: string;
+  location?: string;
   [key: string]: any;
 }
 
@@ -88,6 +89,57 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         }
 
         if (found) {
+          try {
+            // Fetch detailed data from the specific detail endpoint!
+            const detailRes = await api.get<{status: boolean, data: any}>(`/api/v1/order/items/${found.order_package_line_id}/detail/${found.order_id}?is_full=1`);
+            if (detailRes.status && detailRes.data) {
+              const d = detailRes.data;
+              const ordItems: OrderItem[] = (d.line_item || []).map((pkg: any) => ({
+                id: pkg.order_item_id || 0,
+                name: pkg.item_name || 'unset',
+                item_name: pkg.vendor_name || 'unset',
+                price: formatPrice(pkg.order_total || pkg.amount),
+                quantity: pkg.quantity || 1,
+                image_url: pkg.image_url || '',
+                status: pkg.package_status || 'Booked',
+                location: pkg.delivery_date || 'unset',
+              }));
+
+              setOrder({
+                id: found.order_id,
+                order_number: d.order_detail?.order_number || found.order_number || `ORD-${found.order_id}`,
+                order_date: d.order_detail?.order_date || found.booking_date || 'unset',
+                total_amount: formatPrice(d.order_detail?.order_total || found.total_amount),
+                status: found.package_status || 'unset',
+                status_id: 1,
+                payment_status: d.payment_method?.payment_method_short_name || d.payment_method?.payment_method || found.payment_status || 'unset',
+                shipping_address: d.shipping_address || 'unset',
+                contact_email: found.contact_email || 'unset', // from list
+                contact_phone: found.contact_phone || 'unset', // from list
+                items: ordItems.length ? ordItems : [{
+                  id: found.order_id,
+                  name: found.package_name || 'Custom Package',
+                  item_name: found.vendor_name || 'Vendor',
+                  price: formatPrice(found.rate_per_head || found.total_amount),
+                  quantity: found.quantity || 1,
+                  image_url: found.image_url || '',
+                  status: found.package_status || 'Booked',
+                  location: found.delivery_date || 'unset'
+                }],
+                packageName: found.package_name || 'unset',
+                vendorName: found.vendor_name || 'unset',
+                imageUrl: found.image_url || '',
+                orderPackageLineId: found.order_package_line_id || 0,
+                category: found.endpoint?.split('/')[1] || 'catering',
+              });
+              setIsLoading(false);
+              return;
+            }
+          } catch(err) {
+            console.error('Detail fetch error', err);
+          }
+
+          // Fallback if detail fetch fails
           const ordItems: OrderItem[] = (found.items || []).map((itm: any) => ({
             id: itm.item_id || 0,
             name: itm.item_name || 'unset',
@@ -110,7 +162,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             shipping_address: found.shipping_address || 'unset',
             contact_email: found.contact_email || 'unset',
             contact_phone: found.contact_phone || 'unset',
-            items: ordItems,
+            items: ordItems.length ? ordItems : [{
+              id: found.order_id,
+              name: found.package_name || 'Custom Package',
+              item_name: found.vendor_name || 'Vendor',
+              price: formatPrice(found.rate_per_head || found.total_amount),
+              quantity: found.quantity || 1,
+              image_url: found.image_url || '',
+              status: found.package_status || 'Booked',
+              location: found.delivery_date || 'unset'
+            }],
             packageName: found.package_name || 'unset',
             vendorName: found.vendor_name || 'unset',
             imageUrl: found.image_url || '',
@@ -136,7 +197,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <Header />
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
-          <p style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>Fetching invoice details...</p>
+          <p style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>Fetching order details...</p>
         </div>
         <Footer />
       </>
@@ -149,8 +210,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <Header />
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <p>Order not found.</p>
-          <Link href="/orders" className={styles.btnSm} style={{ background: 'var(--primary)', color: '#fff' }}>
-            Back to Bookings
+          <Link href="/orders" className={styles.btnPrimary} style={{ width: '200px', margin: '20px auto' }}>
+            Back to Orders
           </Link>
         </div>
         <Footer />
@@ -164,94 +225,101 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
       <main className={styles.page}>
         {/* Breadcrumb */}
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <Link href="/orders">My Bookings</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>Details</span>
-        </div>
+        <nav className={styles.breadcrumb}>
+          <Link href="/">Home</Link><span className={styles.sep}>/</span>
+          <Link href="/orders">My Orders</Link><span className={styles.sep}>/</span>
+          <span className={styles.current}>Order Details</span>
+        </nav>
 
-        <div className={styles.pageHead} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={styles.pageHead}>
           <div>
-            <h1 className={styles.pageTitle}>Invoice Reference #{order.order_number}</h1>
-            <p className={styles.pageSub}>Placed on: <strong>{order.order_date}</strong></p>
+            <div className={styles.pageTitle}>Order Details</div>
+            <div className={styles.pageSub}>Placed on: <b>{order.order_date}</b></div>
           </div>
-          <Link href="/orders" className={styles.btnSm} style={{ background: 'none', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' }}>
-            <i className="bx bx-left-arrow-alt"></i> Back to Portfolio
+          <Link href="/orders" className={styles.backLink}>
+            <i className='bx bx-arrow-back'></i> Back to Orders
           </Link>
         </div>
 
-        <div className={styles.tlLayout}>
+        <div className={styles.layout}>
+          {/* LEFT */}
           <div>
-            {/* Packages List */}
+            {/* Order Items */}
             <div className={styles.card}>
               <div className={styles.cardInner}>
-                <h3 className={styles.cardTitle}>
-                  <i className="bx bx-receipt"></i> Items in Booking
-                </h3>
+                <div className={styles.cardTitle}>
+                  <i className='bx bx-package'></i>Order Items 
+                  <span className={styles.count}>{order.items.length} packages</span>
+                </div>
+
                 {order.items.map((item, idx) => (
                   <div key={idx} className={styles.ci}>
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className={styles.ciImg}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80';
-                      }}
-                    />
                     <div className={styles.ciMain}>
-                      <h4 className={styles.ciName}>{item.name}</h4>
-                      <span className={styles.ciVendor}>{item.item_name}</span>
-                      <p className={styles.ciMeta}>
-                        Location: {item.location} · Qty: {item.quantity}
-                      </p>
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                        <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-                          {item.status}
-                        </span>
-                        <Link href={`/orders/${order.id}/track/${item.id}`} className={styles.actionLink} style={{ fontSize: '11px' }}>
-                          Track Service Timeline
-                        </Link>
-                        {order.orderPackageLineId && order.orderPackageLineId > 0 && (
-                          <Link href={`/services/${order.category || 'catering'}/packages/${order.orderPackageLineId}?order_id=${order.id}`} className={styles.actionLink} style={{ fontSize: '11px', color: 'var(--primary)' }}>
-                            View Package Details
-                          </Link>
-                        )}
+                      <div className={styles.ciHeader}>
+                        <img 
+                          className={styles.ciImg} 
+                          src={item.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80'} 
+                          alt={item.name} 
+                          onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80'; }} 
+                        />
+                        <div className={styles.ciHeadInfo}>
+                          <div className={styles.ciHeadTop}>
+                            <div>
+                              <div className={styles.ciName}>{item.name}</div>
+                              <div className={styles.ciVendor}>
+                                <i className='bx bx-store' style={{fontSize:'13px'}}></i> {item.item_name}
+                              </div>
+                            </div>
+                            <div className={styles.ciBadges}>
+                              <span className={`${styles.ciStatus} ${styles.confirmed}`}>
+                                <i className='bx bx-check-circle'></i>{item.status}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={styles.ciMetaRow}>
+                            <span className={styles.ciMeta}><i className='bx bx-map'></i>{item.location || 'Delivery'}</span>
+                            <span className={styles.ciMeta}><i className='bx bx-box'></i>Qty: {item.quantity || 1}</span>
+                          </div>
+                          <div className={styles.ciDd}>
+                            <span className={styles.ciDdText}>
+                              <i className='bx bxs-truck'></i>Delivery: {order.order_date}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={styles.ciContent}>
+                        <div className={styles.ciPrice}>
+                          <div className={styles.ciPr}>
+                            <span className={styles.ciPrLbl}>Package Amount</span>
+                            <span className={styles.ciPrVal}>{item.price}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    {item.price && item.price !== 'unset' && (
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>
-                          {item.price}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Billing / Shipping Addresses details */}
+            {/* Delivery Address */}
             <div className={styles.card}>
               <div className={styles.cardInner}>
-                <h3 className={styles.cardTitle}>
+                <div className={styles.cardTitle}>
                   <i className="bx bx-map-pin"></i> Delivery Address &amp; Contacts
-                </h3>
+                </div>
                 <div className={styles.roBlock}>
                   <div className={styles.roIc}>
                     <i className="bx bx-home"></i>
                   </div>
                   <div className={styles.roInfo}>
                     <h4 className={styles.roName}>Shipping Address</h4>
-                    <p className={styles.roLine}>{order.shipping_address}</p>
+                    <p className={styles.roLine}>{order.shipping_address || 'Unset'}</p>
                     <p className={styles.roLine} style={{ marginTop: '6px' }}>
                       <i className="bx bx-envelope" style={{ marginRight: '6px' }}></i>
-                      {order.contact_email}
+                      {order.contact_email || 'Unset'}
                       <span style={{ margin: '0 8px' }}>·</span>
                       <i className="bx bx-phone" style={{ marginRight: '6px' }}></i>
-                      {order.contact_phone}
+                      {order.contact_phone || 'Unset'}
                     </p>
                   </div>
                 </div>
@@ -259,38 +327,79 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* Booking payment details */}
-          <div>
-            <div className={styles.card}>
-              <div className={styles.cardInner}>
-                <h3 className={styles.cardTitle}>
-                  <i className="bx bx-credit-card"></i> Order Value Details
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
-                    <span style={{ fontWeight: 700, color: 'var(--amber)' }}>{order.status}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Payment Status:</span>
-                    <span style={{ fontWeight: 700, color: 'var(--success)' }}>{order.payment_status}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Billing Mode:</span>
-                    <span style={{ fontWeight: 700 }}>Cash on Delivery</span>
-                  </div>
-
-                  <div style={{ height: '1px', background: 'var(--border)', margin: '8px 0' }}></div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800 }}>
-                    <span>Total Invoiced:</span>
-                    <span style={{ color: 'var(--primary)' }}>{order.total_amount}</span>
-                  </div>
+          {/* RIGHT (Sidebar) */}
+          <div className={styles.sidebarSticky}>
+            <div className={styles.bookingCard}>
+              <div className={styles.sidebarHead}>
+                <div className={styles.shTop}>
+                  <div className={styles.shEyebrow}>Order #{order.order_number}</div>
+                  <div className={styles.shStatus}>{order.status}</div>
                 </div>
+                <div className={styles.shTitle}>Order Summary</div>
+                <div className={styles.shOrderdate}>
+                  <i className='bx bx-calendar'></i>{order.order_date}
+                </div>
+                <div className={styles.shTotalRow}>
+                  <div className={styles.shTotalLbl}>Total</div>
+                  <div className={styles.shTotalVal}>{order.total_amount}</div>
+                </div>
+              </div>
+
+              <div className={styles.sdbItems}>
+                {order.items.map((item, idx) => (
+                  <div key={idx} className={styles.sdbItemRow}>
+                    <img 
+                      className={styles.sdbImg} 
+                      src={item.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80'} 
+                      alt={item.name} 
+                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80'; }}
+                    />
+                    <div className={styles.sdbInfo}>
+                      <div className={styles.sdbName}>{item.name}</div>
+                      <div className={styles.sdbPkg}>{item.item_name}</div>
+                    </div>
+                    <div className={styles.sdbPrice}>{item.price}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.priceBreakdown}>
+                <div className={styles.priceRow}>
+                  <span>Subtotal</span>
+                  <span className={styles.priceVal}>{order.total_amount}</span>
+                </div>
+                <hr className={styles.priceDashed} />
+                <div className={`${styles.priceRow} ${styles.total}`}>
+                  <span>Total Due</span>
+                  <span className={`${styles.priceVal} ${styles.total}`}>{order.total_amount}</span>
+                </div>
+              </div>
+
+              <div className={styles.futurePayBlock}>
+                <div>
+                  <div className={styles.fpLbl}>Payment Method</div>
+                  <div className={styles.fpDue}>{order.payment_status}</div>
+                </div>
+                <div className={styles.fpVal}>Cash on Delivery</div>
+              </div>
+
+              <div className={styles.actionsBlock}>
+                <Link href={`/orders/${order.id}/track/${order.items[0]?.id || 0}`} className={styles.btnPrimary}>
+                  <i className='bx bx-map-pin'></i> Track Service Timeline
+                </Link>
+                <button className={styles.btnOutline}>
+                  <i className='bx bx-download'></i> Download Invoice
+                </button>
+                <button className={styles.btnOutline}>
+                  <i className='bx bx-support'></i> Contact Support
+                </button>
+                <button className={`${styles.btnOutline} ${styles.danger}`}>
+                  <i className='bx bx-x-circle'></i> Cancel Order
+                </button>
               </div>
             </div>
           </div>
+
         </div>
       </main>
 
