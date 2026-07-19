@@ -367,9 +367,9 @@ export default function OrdersPage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {filteredOrders.map((ord) => {
+                  {filteredOrders.map((ord, index) => {
                     return (
-                      <div key={ord.id} className={styles.orderCard} onClick={() => router.push(`/orders/${ord.id}`)}>
+                      <div key={`${ord.id}-${index}`} className={styles.orderCard} onClick={() => router.push(`/orders/${ord.id}`)}>
                         <div className={styles.ocPad}>
                           <div className={styles.ciHeader}>
                             {ord.imageUrl ? (
