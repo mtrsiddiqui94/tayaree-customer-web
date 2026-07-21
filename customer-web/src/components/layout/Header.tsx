@@ -3,27 +3,34 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { api } from '@/lib/api';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from './Header.module.css';
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { cartCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [avatarLetter, setAvatarLetter] = useState('U');
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
-    // Check if token exists in localStorage (client-side only)
-    const token = localStorage.getItem('access_token');
-    const phone = localStorage.getItem('phone') || '';
-    setIsLoggedIn(!!token);
-
-    if (token) {
-      // Set avatar letter to first char of phone (or name if we had it, fallback to 'U')
-      const cleanPhone = phone.replace('+', '');
-      setAvatarLetter(cleanPhone ? cleanPhone.charAt(0) : 'U');
+    if (isAuthenticated) {
+      // Fetch notification unread count
+      async function fetchNotificationCount() {
+        try {
+          const result = await api.get<{ data: { count: number } }>(ENDPOINTS.NOTIFICATION_UNREAD_COUNT);
+          setNotificationCount(result?.data?.count ?? 0);
+        } catch {
+          // Non-critical, ignore
+        }
+      }
+      fetchNotificationCount();
     }
-  }, [pathname]);
+  }, [isAuthenticated, pathname]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +38,18 @@ export default function Header() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
+  // Get avatar letter from user profile or phone
+  const avatarLetter = user?.first_name
+    ? user.first_name.charAt(0).toUpperCase()
+    : user?.phone
+      ? user.phone.replace('+', '').charAt(0)
+      : 'U';
 
   return (
     <header className={styles.header}>
@@ -62,7 +81,7 @@ export default function Header() {
           >
             Home
           </Link>
-          {isLoggedIn && (
+          {isAuthenticated && (
             <>
               <Link
                 href="/services"
@@ -75,7 +94,7 @@ export default function Header() {
               <Link
                 href="/deals"
                 className={`${styles.navLink} ${
-                  pathname === '/deals' ? styles.navLinkActive : ''
+                  pathname === '/deals' || pathname.startsWith('/deals/') ? styles.navLinkActive : ''
                 }`}
               >
                 Deals
@@ -123,11 +142,10 @@ export default function Header() {
             <span>Get App</span>
           </Link>
 
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <>
               <Link href="/wishlist" className={styles.iconBtn} title="Wishlist">
                 <i className="bx bx-heart"></i>
-                <span className={styles.iconBadge}>2</span>
               </Link>
               <Link
                 href="/notifications"
@@ -135,16 +153,25 @@ export default function Header() {
                 title="Notifications"
               >
                 <i className="bx bx-bell"></i>
-                <span className={styles.iconBadge}>5</span>
+                {notificationCount > 0 && (
+                  <span className={styles.iconBadge}>{notificationCount}</span>
+                )}
               </Link>
               <Link href="/cart" className={styles.iconBtn} title="Cart">
                 <i className="bx bx-cart"></i>
+                {cartCount > 0 && (
+                  <span className={styles.iconBadge}>{cartCount}</span>
+                )}
               </Link>
               <Link href="/chat" className={styles.iconBtn} title="Messages">
                 <i className="bx bx-message-square-detail"></i>
               </Link>
               <Link href="/profile" className={styles.avatarBtn} title="Profile">
-                {avatarLetter}
+                {user?.image ? (
+                  <img src={user.image} alt={user.first_name || 'Profile'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  avatarLetter
+                )}
               </Link>
             </>
           ) : (
@@ -157,3 +184,4 @@ export default function Header() {
     </header>
   );
 }
+

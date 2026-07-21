@@ -46,6 +46,13 @@ export default function CategoryListingPage({ params }: PageProps) {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortOption, setSortOption] = useState('popular');
 
+  const searchParams = React.use(params);
+  // Add pagination and subcategory state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentLimit, setCurrentLimit] = useState(30);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
+
   // Format Page Title
   const categoryTitle = category
     ? category.charAt(0).toUpperCase() + category.slice(1)
@@ -74,9 +81,16 @@ export default function CategoryListingPage({ params }: PageProps) {
       if (!category) return;
       setIsLoading(true);
       try {
-        // Fetch services using dynamic category endpoint
+        const queryParams = [
+          `limit=${currentLimit}`,
+          `page=${currentPage}`
+        ];
+        if (selectedSubcategoryId) {
+          queryParams.push(`category_id=${selectedSubcategoryId}`);
+        }
+
         const res = await api.get<{ status: boolean; data: Service[] }>(
-          `/api/v1/services/${category}?limit=30&page=1`
+          `/api/v1/services/${category}?${queryParams.join('&')}`
         );
         if (res.status && res.data) {
           setServices(res.data);
@@ -91,7 +105,24 @@ export default function CategoryListingPage({ params }: PageProps) {
       }
     }
     loadCategoryServices();
-  }, [category, categoryTitle, showToast]);
+  }, [category, categoryTitle, showToast, currentPage, currentLimit, selectedSubcategoryId]);
+
+  useEffect(() => {
+    async function loadSubcategories() {
+      if (!category) return;
+      try {
+        const res = await api.get<{ status: boolean; data: any[] }>(
+          `/api/v1/services/${category}/categories`
+        );
+        if (res.status && res.data) {
+          setSubcategories(res.data);
+        }
+      } catch (e) {
+        console.error('Failed to load subcategories:', e);
+      }
+    }
+    loadSubcategories();
+  }, [category]);
 
   const clearAllFilters = () => {
     setMaxPriceLimit(300000);
@@ -153,6 +184,35 @@ export default function CategoryListingPage({ params }: PageProps) {
           <p className={styles.pageDesc}>
             Browse top-rated vetted {categoryTitle.toLowerCase()} services and packages.
           </p>
+          {subcategories.length > 0 && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
+              <button
+                onClick={() => { setSelectedSubcategoryId(null); setCurrentPage(1); }}
+                style={{
+                  padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                  cursor: 'pointer', border: '1px solid var(--border)',
+                  background: selectedSubcategoryId === null ? 'var(--primary)' : 'var(--card)',
+                  color: selectedSubcategoryId === null ? '#fff' : 'var(--text-secondary)'
+                }}
+              >
+                All
+              </button>
+              {subcategories.map(sub => (
+                <button
+                  key={sub.id}
+                  onClick={() => { setSelectedSubcategoryId(sub.id); setCurrentPage(1); }}
+                  style={{
+                    padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer', border: '1px solid var(--border)',
+                    background: selectedSubcategoryId === sub.id ? 'var(--primary)' : 'var(--card)',
+                    color: selectedSubcategoryId === sub.id ? '#fff' : 'var(--text-secondary)'
+                  }}
+                >
+                  {sub.name} ({sub.items_count || sub.itemsCount || 0})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className={styles.layout}>
@@ -348,14 +408,26 @@ export default function CategoryListingPage({ params }: PageProps) {
 
                 {filteredServices.length > 0 && (
                   <div className={styles.pagination}>
-                    <button className={`${styles.pgBtn} ${styles.pgBtnDisabled}`}>
+                    <button 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={`${styles.pgBtn} ${currentPage === 1 ? styles.pgBtnDisabled : ''}`}
+                      disabled={currentPage === 1}
+                    >
                       <i className="bx bx-chevron-left"></i>
                     </button>
                     <button className={`${styles.pgBtn} ${styles.pgBtnActive}`}>
-                      1
+                      {currentPage}
                     </button>
-                    <button className={styles.pgBtn}>2</button>
-                    <button className={styles.pgBtn}>
+                    <button 
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      className={styles.pgBtn}
+                    >
+                      {currentPage + 1}
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      className={styles.pgBtn}
+                    >
                       <i className="bx bx-chevron-right"></i>
                     </button>
                   </div>

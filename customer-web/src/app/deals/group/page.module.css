@@ -1,0 +1,47 @@
+.page { max-width: 1280px; margin: 0 auto; padding: 0 40px 90px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); padding: 20px 0; }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.sep { color: var(--border); }
+.current { color: var(--text-primary); font-weight: 600; }
+
+.dealsHero { background: linear-gradient(135deg, var(--primary-dark), var(--primary) 65%, #E5434A); border-radius: var(--radius-l); padding: 30px 34px; color: #fff; position: relative; overflow: hidden; margin-bottom: 24px; }
+.dealsHero::after { content: ''; position: absolute; right: -90px; bottom: -110px; width: 320px; height: 320px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+.dealsHeroBadge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); border-radius: var(--radius-full); padding: 6px 13px; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; }
+.dealsHeroT { font-size: 30px; font-weight: 800; letter-spacing: -0.8px; margin-top: 14px; position: relative; z-index: 1; }
+.dealsHeroS { font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 9px; line-height: 1.6; max-width: 560px; position: relative; z-index: 1; }
+
+.filterbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 22px; }
+.fchip { font-size: 13px; font-weight: 700; color: var(--text-secondary); background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 9px 18px; cursor: pointer; transition: .15s; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
+.fchip:hover { background: var(--surface); color: var(--primary); }
+.fchipActive { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.dealsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+.gdCard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-m); overflow: hidden; text-decoration: none; color: inherit; display: flex; flex-direction: column; transition: border-color .15s, box-shadow .15s; }
+.gdCard:hover { border-color: var(--text-muted); box-shadow: var(--shadow-sm); }
+.gdCover { height: 170px; position: relative; background: var(--input-bg); overflow: hidden; }
+.gdCover img { width: 100%; height: 100%; object-fit: cover; }
+.gdCover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0) 40%, rgba(0,0,0,0.35)); }
+.gdCat { position: absolute; top: 12px; left: 12px; z-index: 2; background: rgba(255,255,255,0.95); color: var(--text-primary); font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-full); }
+.gdTimer { position: absolute; top: 12px; right: 12px; z-index: 2; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 5px; }
+.gdOff { position: absolute; bottom: 12px; left: 12px; z-index: 2; background: rgba(26,122,54,0.95); color: #fff; font-size: 11.5px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-full); }
+.gdBody { padding: 15px 16px 17px; flex: 1; display: flex; flex-direction: column; }
+.gdName { font-size: 15.5px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.3; margin-bottom: 4px; }
+.gdVendor { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+.gdVendor .star { color: var(--amber); font-weight: 700; }
+.gdPriceRow { display: flex; align-items: baseline; gap: 9px; margin-top: 12px; }
+.gdPrice { font-size: 21px; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
+.gdPer { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); }
+.gdOrig { font-size: 13px; color: var(--text-muted); text-decoration: line-through; font-weight: 600; }
+.gdProgWrap { margin-top: 13px; }
+.gdProgTop { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 700; margin-bottom: 6px; }
+.gdProgTop .u { color: var(--primary); }
+.gdProg { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.gdProgFill { height: 100%; background: var(--primary); border-radius: 4px; }
+.gdProgFillDone { background: var(--success); }
+.gdNote { font-size: 11.5px; margin-top: 8px; display: flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+.gdNoteUnlocked { color: var(--success); font-weight: 700; }
+.gdFoot { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--border); }
+.gdJoin { display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: #fff; font-size: 12.5px; font-weight: 800; padding: 9px 16px; border-radius: var(--radius-full); text-decoration: none; box-shadow: var(--shadow-btn); }
+.gdJoin:hover { background: var(--primary-dark); }
+.gdJoined { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }

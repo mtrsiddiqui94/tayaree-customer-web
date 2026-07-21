@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 interface Address {
@@ -235,7 +236,8 @@ export default function AddressBookPage() {
   };
 
   return (
-    <>
+    <DashboardLayout breadcrumbTitle="Address Book">
+      <>
       {toast && (
         <div style={{
           position: 'fixed',
@@ -519,5 +521,6 @@ export default function AddressBookPage() {
         </div>
       </div>
     </>
+  </DashboardLayout>
   );
 }

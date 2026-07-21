@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
 import styles from './orders.module.css';
 
@@ -185,9 +184,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <>
-      <Header />
-
+    <DashboardLayout breadcrumbTitle="My Orders">
       {/* Toast alert */}
       {toast && (
         <div style={{
@@ -212,93 +209,12 @@ export default function OrdersPage() {
         </div>
       )}
 
-      <main className={styles.dashLayout ? "" : ""}>
-        <div style={{maxWidth: "1280px", margin: "0 auto", padding: "22px 40px 80px"}}>
-          {/* Breadcrumb */}
-          <div className={styles.breadcrumb}>
-            <Link href="/">Home</Link>
-            <span className={styles.breadcrumbSep}>/</span>
-            <span>My Orders</span>
-          </div>
-
-          {/* Dash Layout */}
-          <div className={styles.dashLayout}>
-            
-            {/* Dashboard Sidebar */}
-            <aside className={styles.dashSidebar}>
-              <div className={styles.sidebarCard}>
-                <div className={styles.sidebarProfile}>
-                  <div className={styles.sidebarAvatar}>A</div>
-                  <div className={styles.sidebarName}>Adnan Siddiqui</div>
-                  <div className={styles.sidebarEmail}>adnan@email.com</div>
-                </div>
-                <nav className={styles.sidebarNav}>
-                  <div className={styles.sidebarNavLabel}>Activities</div>
-                  <Link href="/orders" className={`${styles.sidebarNavItem} ${styles.active}`}>
-                    <i className='bx bx-receipt'></i> Orders <span className={styles.sidebarNavBadge}>{orders.length}</span>
-                  </Link>
-                  <Link href="/all-deliveries" className={styles.sidebarNavItem}>
-                    <i className='bx bx-package'></i> Deliveries
-                  </Link>
-                  <Link href="/all-payments" className={styles.sidebarNavItem}>
-                    <i className='bx bx-credit-card'></i> Payments
-                  </Link>
-                  <Link href="/quotes" className={styles.sidebarNavItem}>
-                    <i className='bx bx-file-blank'></i> Quotes
-                  </Link>
-                  <Link href="/events" className={styles.sidebarNavItem}>
-                    <i className='bx bx-calendar'></i> Events
-                  </Link>
-                  <Link href="/gift-registry" className={styles.sidebarNavItem}>
-                    <i className='bx bx-gift'></i> Registries
-                  </Link>
-                  <Link href="/wishlist" className={styles.sidebarNavItem}>
-                    <i className='bx bx-heart'></i> Wish List
-                  </Link>
-                  <Link href="/notifications" className={styles.sidebarNavItem}>
-                    <i className='bx bx-bell'></i> Notifications
-                  </Link>
-                  
-                  <div className={styles.sidebarNavLabel}>Account</div>
-                  <Link href="/address" className={styles.sidebarNavItem}>
-                    <i className='bx bx-map'></i> Address
-                  </Link>
-                  <Link href="/payment" className={styles.sidebarNavItem}>
-                    <i className='bx bx-wallet'></i> Payment Methods
-                  </Link>
-                  <Link href="/invite" className={styles.sidebarNavItem}>
-                    <i className='bx bx-user-plus'></i> Invite Friends
-                  </Link>
-                  <Link href="/profile" className={styles.sidebarNavItem}>
-                    <i className='bx bx-user'></i> Profile
-                  </Link>
-                  <Link href="/password" className={styles.sidebarNavItem}>
-                    <i className='bx bx-lock'></i> Password
-                  </Link>
-                  <Link href="/phone" className={styles.sidebarNavItem}>
-                    <i className='bx bx-phone'></i> Phone
-                  </Link>
-                  
-                  <div className={styles.sidebarNavLabel}>Support</div>
-                  <Link href="/chat" className={styles.sidebarNavItem}>
-                    <i className='bx bx-headphone'></i> Customer Service
-                  </Link>
-                  <Link href="/privacy" className={styles.sidebarNavItem}>
-                    <i className='bx bx-shield'></i> Privacy Policy
-                  </Link>
-                  <Link href="/login" className={styles.sidebarNavItem} style={{ color: 'var(--primary)' }}>
-                    <i className='bx bx-log-out'></i> Sign Out
-                  </Link>
-                </nav>
-              </div>
-            </aside>
-
-            {/* Dash Content */}
-            <div className={styles.dashContent}>
-              <div className={styles.pageHead}>
-                <div className={styles.pageTitle}>My Orders</div>
-                <div className={styles.pageSub}>View and manage all your orders, deliveries and payments.</div>
-              </div>
+      {/* DASHBOARD CONTENT (replaces old embedded sidebar) */}
+      <div className={styles.dashContent}>
+        <div className={styles.pageHead}>
+          <div className={styles.pageTitle}>My Orders</div>
+          <div className={styles.pageSub}>View and manage all your orders, deliveries and payments.</div>
+        </div>
 
               {/* Buy Again */}
               {!isLoading && buyAgainItems.length > 0 && (
@@ -448,12 +364,8 @@ export default function OrdersPage() {
                   })}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-    </>
+      </div>
+      {/* END DASHBOARD CONTENT */}
+    </DashboardLayout>
   );
 }

@@ -18,11 +18,24 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Result type matching Flutter's safeCall pattern.
+ * Either a success with data or an error.
+ */
+export type Result<T> =
+  | { success: true; data: T }
+  | { success: false; error: ApiError; message: string };
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token');
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const token = getToken();
 
   const headers = new Headers({
     'Content-Type': 'application/json',
@@ -43,7 +56,7 @@ async function request<T>(
   try {
     const text = await response.text();
     responseData = text ? JSON.parse(text) : {};
-  } catch (e) {
+  } catch {
     responseData = {};
   }
 
@@ -53,6 +66,71 @@ async function request<T>(
   }
 
   return responseData as T;
+}
+
+/**
+ * Upload a file via multipart form data.
+ * Matches Flutter's multipart upload pattern used for:
+ * - Profile image upload
+ * - Audio upload
+ * - Gift registry cover photo
+ */
+async function uploadMultipart<T>(
+  endpoint: string,
+  formData: FormData,
+  method: 'POST' | 'PUT' = 'POST'
+): Promise<T> {
+  const token = getToken();
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  // Do NOT set Content-Type — browser will set multipart/form-data with boundary automatically
+
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: formData,
+  });
+
+  let responseData: any;
+  try {
+    const text = await response.text();
+    responseData = text ? JSON.parse(text) : {};
+  } catch {
+    responseData = {};
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData?.message || responseData?.error || 'Something went wrong';
+    throw new ApiError(errorMessage, response.status, responseData);
+  }
+
+  return responseData as T;
+}
+
+/**
+ * Safe wrapper matching Flutter's safeCall<T> pattern.
+ * Returns a Result union type instead of throwing.
+ */
+async function safeCall<T>(fn: () => Promise<T>): Promise<Result<T>> {
+  try {
+    const data = await fn();
+    return { success: true, data };
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return { success: false, error: err, message: err.message };
+    }
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+    return {
+      success: false,
+      error: new ApiError(message, 0),
+      message,
+    };
+  }
 }
 
 export const api = {
@@ -82,4 +160,9 @@ export const api = {
       method: 'DELETE',
       body: body ? JSON.stringify(body) : undefined,
     }),
+
+  upload: <T>(endpoint: string, formData: FormData, method: 'POST' | 'PUT' = 'POST') =>
+    uploadMultipart<T>(endpoint, formData, method),
+
+  safeCall,
 };

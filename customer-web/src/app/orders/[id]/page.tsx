@@ -191,6 +191,39 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    if (!orderId || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dev-customer2.tayaree.com';
+      const res = await fetch(`${backendUrl}/api/v1/order/invoice/${orderId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to download invoice');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice_ORD-${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      showToast('Error downloading invoice.', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <>
@@ -210,7 +243,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <Header />
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <p>Order not found.</p>
-          <Link href="/orders" className={styles.btnPrimary} style={{ width: '200px', margin: '20px auto' }}>
+          <Link href="/orders" className={styles.btnPrimary} style={{ width: '200px', margin: '20px auto', display: 'block' }}>
             Back to Orders
           </Link>
         </div>
@@ -222,14 +255,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <Header />
-
-      <main className={styles.page}>
-        {/* Breadcrumb */}
-        <nav className={styles.breadcrumb}>
-          <Link href="/">Home</Link><span className={styles.sep}>/</span>
-          <Link href="/orders">My Orders</Link><span className={styles.sep}>/</span>
-          <span className={styles.current}>Order Details</span>
-        </nav>
+      <div className={styles.page}>
+        {/* Breadcrumb is handled by DashboardLayout, but we can keep the local breadcrumb inside pageHead or remove it. 
+            Since DashboardLayout provides breadcrumb, we remove local nav breadcrumb. */}
 
         <div className={styles.pageHead}>
           <div>
@@ -325,6 +353,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
             </div>
+
+
           </div>
 
           {/* RIGHT (Sidebar) */}
@@ -375,6 +405,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
+              {/* Sidebar detail links for Drawers */}
+              <div className={styles.sdbDetailLinks}>
+                <button className={styles.sdbDetailRow} onClick={() => alert('Delivery details drawer coming soon')}>
+                  <div className={styles.sdbDetailIcon}><i className='bx bx-calendar-star'></i></div>
+                  <div className={styles.sdbDetailLbl}>View Delivery Details</div>
+                  <i className={`bx bx-chevron-right ${styles.sdbDetailChev}`}></i>
+                </button>
+                <button className={styles.sdbDetailRow} onClick={() => alert('Payment schedule drawer coming soon')}>
+                  <div className={styles.sdbDetailIcon}><i className='bx bx-calendar-check'></i></div>
+                  <div className={styles.sdbDetailLbl}>View Payment Schedule</div>
+                  <i className={`bx bx-chevron-right ${styles.sdbDetailChev}`}></i>
+                </button>
+                <button className={styles.sdbDetailRow} onClick={() => alert('Shipping details drawer coming soon')}>
+                  <div className={styles.sdbDetailIcon}><i className='bx bxs-truck'></i></div>
+                  <div className={styles.sdbDetailLbl}>View Shipping Charges</div>
+                  <div className={styles.sdbDetailAmt}>PKR 15,000</div>
+                  <i className={`bx bx-chevron-right ${styles.sdbDetailChev}`}></i>
+                </button>
+                <button className={styles.sdbDetailRow} onClick={() => alert('Taxes details drawer coming soon')}>
+                  <div className={styles.sdbDetailIcon}><i className='bx bx-receipt'></i></div>
+                  <div className={styles.sdbDetailLbl}>View Taxes</div>
+                  <div className={styles.sdbDetailAmt}>PKR 14,350</div>
+                  <i className={`bx bx-chevron-right ${styles.sdbDetailChev}`}></i>
+                </button>
+              </div>
+
               <div className={styles.futurePayBlock}>
                 <div>
                   <div className={styles.fpLbl}>Payment Method</div>
@@ -384,25 +440,37 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
 
               <div className={styles.actionsBlock}>
-                <Link href={`/orders/${order.id}/track/${order.items[0]?.id || 0}`} className={styles.btnPrimary}>
-                  <i className='bx bx-map-pin'></i> Track Service Timeline
-                </Link>
-                <button className={styles.btnOutline}>
-                  <i className='bx bx-download'></i> Download Invoice
+                {!(order.status?.toLowerCase() === 'canceled' || order.status?.toLowerCase() === 'cancelled') && (
+                  <Link href={`/orders/${order.id}/track/${order.items[0]?.id || 0}`} className={styles.btnPrimary}>
+                    <i className='bx bx-map-pin'></i> Track Service Timeline
+                  </Link>
+                )}
+                <button 
+                  className={styles.btnOutline} 
+                  onClick={handleDownloadInvoice}
+                  disabled={isDownloading}
+                >
+                  <i className={isDownloading ? 'bx bx-loader-alt bx-spin' : 'bx bx-download'}></i> 
+                  {isDownloading ? ' Downloading...' : ' Download Invoice'}
                 </button>
                 <button className={styles.btnOutline}>
                   <i className='bx bx-support'></i> Contact Support
                 </button>
-                <button className={`${styles.btnOutline} ${styles.danger}`}>
-                  <i className='bx bx-x-circle'></i> Cancel Order
-                </button>
+                
+                {!(order.status?.toLowerCase() === 'canceled' || order.status?.toLowerCase() === 'cancelled' || order.status?.toLowerCase() === 'cancellation under review' || order.status?.toLowerCase() === 'cancellation_under_review') ? (
+                  <Link href={`/orders/${order.id}/cancel`} className={`${styles.btnOutline} ${styles.danger}`}>
+                    <i className='bx bx-x-circle'></i> Cancel Order
+                  </Link>
+                ) : (
+                  <Link href={`/orders/${order.id}/cancel/summary`} className={`${styles.btnOutline} ${styles.danger}`}>
+                    <i className='bx bx-info-circle'></i> View Cancellation Details
+                  </Link>
+                )}
               </div>
             </div>
           </div>
-
+          </div>
         </div>
-      </main>
-
       <Footer />
     </>
   );

@@ -1,0 +1,229 @@
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px 90px;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 22px 0 18px;
+}
+.breadcrumb a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  color: var(--primary);
+}
+.breadcrumb .sep {
+  opacity: 0.4;
+}
+.breadcrumb .current {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.pageHead {
+  margin-bottom: 20px;
+}
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+.pageSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 4px;
+}
+.card {
+  background: var(--card);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.cardInner {
+  padding: 22px;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cardTitle i {
+  color: var(--primary);
+  font-size: 18px;
+}
+.addLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  padding: 8px 14px;
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-full);
+  transition: 0.15s;
+}
+.addLink:hover {
+  background: var(--primary-light);
+}
+.sectionLbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 12px;
+}
+.pmItem {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.pmItem:last-child {
+  margin-bottom: 0;
+}
+.pmItem.default {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.payLogo {
+  width: 54px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.payLogo.visa { background: #1A1F71; color: #fff; }
+.payLogo.master { background: #EB001B; color: #fff; font-size: 10px; }
+.payLogo.amex { background: #006FCF; color: #fff; font-size: 10px; }
+.payLogo.cod { background: rgba(26,122,54,0.1); color: var(--success); font-size: 20px; }
+.payLogo.bank { background: var(--primary-light); color: var(--primary); font-size: 20px; }
+.pmBody {
+  flex: 1;
+  min-width: 0;
+}
+.pmTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pmName {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.pmBadge {
+  background: rgba(26,122,54,0.1);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
+}
+.pmSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4px;
+}
+.pmActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.pmAct {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  transition: 0.15s;
+}
+.pmAct:hover {
+  color: var(--primary);
+  background: var(--surface);
+}
+.pmAct.danger:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.pmFoot {
+  display: flex;
+  gap: 8px;
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px dashed var(--border);
+}
+.setDefault {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.secureNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+.secureNote i {
+  color: var(--success);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.secureNoteTxt {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}

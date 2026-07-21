@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useCart } from '@/context/CartContext';
 import { api } from '@/lib/api';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from './cart.module.css';
 
 interface ServiceItem {
@@ -80,76 +82,7 @@ interface SaveLaterItem {
   quantity: number;
 }
 
-// Fallback cart items matching designs/cart-checkout.html mockup
-const MOCK_CART_ITEMS: CartItem[] = [
-  {
-    cart_item_id: 1,
-    service_id: 101,
-    item_name: "Royal Biryani Catering",
-    vendor_name: "Amber's Kitchen",
-    image_url: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=200&h=200&q=80",
-    price: 114750,
-    quantity: 1,
-    delivery_date: "March 15, 2025",
-    location: "Lahore",
-    is_quote: true,
-    savings: 12750,
-    service_items: [
-      { item_name: "Chicken Biryani", image_url: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" },
-      { item_name: "Beef Pulao", image_url: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" },
-      { item_name: "Raita & Salad", image_url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" },
-      { item_name: "Kheer", image_url: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" }
-    ],
-    installments: [
-      { label: "Booking Deposit", date: "Today", pct: 30, amount: 34425 },
-      { label: "Final Balance", date: "March 10, 2025 · 5 days before event", pct: 70, amount: 80325 }
-    ]
-  },
-  {
-    cart_item_id: 2,
-    service_id: 102,
-    item_name: "Premium Photography & Videography",
-    vendor_name: "Lens & Light Studio",
-    image_url: "https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?auto=format&fit=crop&w=200&h=200&q=80",
-    price: 85000,
-    quantity: 1,
-    delivery_date: "from March 17, 2025",
-    location: "Lahore",
-    is_group_deal: true,
-    savings: 9500,
-    service_items: [
-      { item_name: "Photography", image_url: "https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?auto=format&fit=crop&w=160&h=160&q=80", color: "12 Hours" },
-      { item_name: "Videography", image_url: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=160&h=160&q=80", color: "8 Hours" },
-      { item_name: "Drone Shots", image_url: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" },
-      { item_name: "Highlights Reel", image_url: "https://images.unsplash.com/photo-1598300056393-4afd99d1d79a?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" }
-    ],
-    installments: [
-      { label: "Booking Deposit", date: "Today", pct: 30, amount: 25500 },
-      { label: "Final Balance", date: "March 10, 2025 · 5 days before event", pct: 70, amount: 59500 }
-    ]
-  },
-  {
-    cart_item_id: 3,
-    service_id: 103,
-    item_name: "Floral Decoration — Grand Hall",
-    vendor_name: "Rose Garden Events",
-    image_url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=200&h=200&q=80",
-    price: 45000,
-    quantity: 1,
-    delivery_date: "March 15, 2025",
-    location: "Lahore",
-    savings: 5000,
-    service_items: [
-      { item_name: "Reception Arch", image_url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=160&h=160&q=80", color: "Premium" },
-      { item_name: "Centerpieces", image_url: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?auto=format&fit=crop&w=160&h=160&q=80", color: "Premium" },
-      { item_name: "Entrance Flowers", image_url: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=160&h=160&q=80", color: "Standard" },
-      { item_name: "Stage Backdrop", image_url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=160&h=160&q=80", color: "Deluxe" }
-    ],
-    installments: [
-      { label: "Full Payment", date: "Today · no future installments", pct: 100, amount: 45000 }
-    ]
-  }
-];
+
 
 export default function CartPage() {
   const router = useRouter();
@@ -160,6 +93,7 @@ export default function CartPage() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [summary, setSummary] = useState<CartSummary | null>(null);
+  const { refreshCartCount } = useCart();
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const showToast = React.useCallback((msg: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -418,29 +352,32 @@ export default function CartPage() {
 
   const handleRemoveItem = async (itemId: number) => {
     setCartItems(prev => prev.filter(i => i.cart_item_id !== itemId));
-    await api.delete('/api/v1/cart/items/remove', {
+    await api.delete(ENDPOINTS.CART_REMOVE, {
       cart_item_id: itemId.toString(),
     }).catch(() => {});
+    refreshCartCount();
   };
 
   const handleSaveForLater = async (item: CartItem) => {
     setCartItems(prev => prev.filter(i => i.cart_item_id !== item.cart_item_id));
-    await api.post('/api/v1/save-for-later/add', {
+    await api.post(ENDPOINTS.SAVE_FOR_LATER_ADD, {
       cart_item_id: item.cart_item_id.toString(),
     }).catch(() => {});
+    refreshCartCount();
     loadData();
   };
 
   const handleMoveToCart = async (saveForLaterId: number) => {
-    await api.post('/api/v1/save-for-later/move-to-cart', {
+    await api.post(ENDPOINTS.SAVE_FOR_LATER_MOVE_TO_CART, {
       save_for_later_id: saveForLaterId.toString(),
     }).catch(() => {});
+    refreshCartCount();
     loadData();
   };
 
   const handleRemoveSaved = async (saveForLaterId: number) => {
     setSavedItems(prev => prev.filter(i => i.save_for_later_id !== saveForLaterId));
-    await api.delete('/api/v1/save-for-later/remove', {
+    await api.delete(ENDPOINTS.SAVE_FOR_LATER_REMOVE, {
       save_for_later_id: saveForLaterId.toString(),
     }).catch(() => {});
   };
@@ -867,7 +804,7 @@ export default function CartPage() {
                             <button
                               onClick={async () => {
                                 try {
-                                  await api.delete('/api/v1/cart/promo-code/remove', {
+                                  await api.delete(ENDPOINTS.CART_PROMO_REMOVE, {
                                     data: { cart_promo_code_id: summary.promo!.id.toString() }
                                   });
                                   showToast('Promo code removed successfully.', 'success');
@@ -895,7 +832,7 @@ export default function CartPage() {
                               onClick={async () => {
                                 if (!promoCode.trim()) return;
                                 try {
-                                  await api.post('/api/v1/cart/promo-code/add', {
+                                  await api.post(ENDPOINTS.CART_PROMO_ADD, {
                                     promo_code: promoCode
                                   });
                                   showToast('Promo code applied successfully!', 'success');

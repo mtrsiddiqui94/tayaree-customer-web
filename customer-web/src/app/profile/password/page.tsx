@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 export default function ChangePasswordPage() {
@@ -80,7 +81,8 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <>
+    <DashboardLayout breadcrumbTitle="Security & Password">
+      <>
       {toast && (
         <div style={{
           position: 'fixed',
@@ -218,5 +220,6 @@ export default function ChangePasswordPage() {
         </div>
       </div>
     </>
+  </DashboardLayout>
   );
 }

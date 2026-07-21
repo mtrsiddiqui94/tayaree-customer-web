@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from '../auth.module.css';
 
 interface VerifyOtpResponse {
@@ -23,6 +25,7 @@ interface VerifyOtpResponse {
 function VerifyOtpContent() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { login } = useAuth();
   const searchParams = useSearchParams();
 
   const phone = searchParams.get('phone') || '';
@@ -102,7 +105,7 @@ function VerifyOtpContent() {
     const otpType = flow === 'reset' ? 'reset-password' : 'authentication';
 
     try {
-      const response = await api.post<VerifyOtpResponse>('/api/v1/auth/otp/verify', {
+      const response = await api.post<VerifyOtpResponse>(ENDPOINTS.AUTH_OTP_VERIFY, {
         phone: phone,
         phone_country: country,
         otp_code: otpCode,
@@ -111,8 +114,7 @@ function VerifyOtpContent() {
 
       if (flow === 'signup') {
         if (response.data?.authorization?._token) {
-          localStorage.setItem('access_token', response.data.authorization._token);
-          localStorage.setItem('phone', phone);
+          login(response.data.authorization._token, phone);
           showToast('Account verified successfully!', 'success');
           router.push('/');
         } else {
@@ -142,7 +144,7 @@ function VerifyOtpContent() {
     const otpType = flow === 'reset' ? 'reset-password' : 'authentication';
 
     try {
-      const response = await api.post<{ message: string }>('/api/v1/auth/otp/request', {
+      const response = await api.post<{ message: string }>(ENDPOINTS.AUTH_OTP_REQUEST, {
         phone: phone,
         phone_country: country,
         is_resend: '1',

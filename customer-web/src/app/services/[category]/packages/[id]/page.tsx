@@ -97,35 +97,7 @@ export default function PackageDetailPage({ params }: PageProps) {
   // Build Included Items List
   const displayItems = packageNode?.serviceItems && packageNode.serviceItems.length > 0
     ? packageNode.serviceItems
-    : [
-        {
-          id: 'mock-i1',
-          itemName: 'Chicken Biryani',
-          itemDescription: 'Aromatic basmati rice with tender chicken, saffron & whole spices.',
-          imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=120&h=120&q=80',
-          itemStatus: 'Standard',
-          info2Label: '250 Servings',
-          info3Label: 'Halal',
-        },
-        {
-          id: 'mock-i2',
-          itemName: 'Beef Pulao',
-          itemDescription: 'Slow-cooked beef pulao in seasoned stock with caramelized onions.',
-          imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=120&h=120&q=80',
-          itemStatus: 'Standard',
-          info2Label: '250 Servings',
-          info3Label: 'Halal',
-        },
-        {
-          id: 'mock-i3',
-          itemName: 'Raita & Salad Bar',
-          itemDescription: 'Fresh mint raita, kachumber salad and seasonal greens, refilled live.',
-          imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=120&h=120&q=80',
-          itemStatus: 'Standard',
-          info2Label: 'Unlimited',
-          info3Label: 'Vegetarian',
-        }
-      ];
+    : [];
 
   // Build Timeline Items
   const timelineItems: any[] = [];
@@ -162,28 +134,7 @@ export default function PackageDetailPage({ params }: PageProps) {
   // Fallback Timeline if empty
   const displayTimeline = timelineItems.length > 0
     ? timelineItems
-    : [
-        {
-          id: 'mock-t1',
-          label: 'Reservation Payment',
-          date: 'Paid on 10 March 2025',
-          pct: '30%',
-          status: 'Paid',
-          statusClass: 'success',
-          amount: 34425,
-          isPaid: true
-        },
-        {
-          id: 'mock-t2',
-          label: 'Final Balance',
-          date: 'Due March 14, 2025 · auto-charge Visa',
-          pct: '70%',
-          status: 'Scheduled',
-          statusClass: 'active',
-          amount: 80325,
-          isPaid: false
-        }
-      ];
+    : [];
 
   // Tab Stats
   const upcomingCount = paymentInfo?.summary?.upcoming?.dueCount || (displayTimeline.filter(t => !t.isPaid).length);

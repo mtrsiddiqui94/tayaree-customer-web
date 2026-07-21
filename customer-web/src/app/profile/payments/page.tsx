@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 // Mock package options matching mockup
@@ -140,7 +141,8 @@ export default function PaymentsPage() {
   const totalPaidAmount = filteredHistory.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
-    <>
+    <DashboardLayout breadcrumbTitle="Payment Methods">
+      <>
       <div>
         <div className={styles.pageHead}>
           <h2 className={styles.pageTitle}>Payments &amp; Billings</h2>
@@ -397,5 +399,6 @@ export default function PaymentsPage() {
         )}
       </div>
     </>
+  </DashboardLayout>
   );
 }

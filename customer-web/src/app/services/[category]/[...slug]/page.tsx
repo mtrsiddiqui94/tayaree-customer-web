@@ -125,6 +125,10 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [calendarSlots, setCalendarSlots] = useState<CalendarSlot[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsLimit] = useState(5);
+  const [frequentlyBought, setFrequentlyBought] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [packageDetails, setPackageDetails] = useState<any[]>([]);
   const [checkedPolicies, setCheckedPolicies] = useState<Record<string, boolean>>({});
   
@@ -317,7 +321,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
   async function loadReviews() {
     try {
-      const res = await api.get<{ status: boolean; data: any[] }>(`/api/v1/${endpointPath}/ratings?limit=5&page=1`);
+      const res = await api.get<{ status: boolean; data: any[] }>(`/api/v1/${endpointPath}/ratings?limit=${reviewsLimit}&page=${reviewsPage}`);
       if (res.status && res.data) {
         setReviews(res.data.map(r => ({
           id: r.id,
@@ -330,6 +334,12 @@ export default function ServiceDetailPage({ params }: PageProps) {
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    if (detail) {
+      loadReviews();
+    }
+  }, [reviewsPage, reviewsLimit]);
 
   // Load Main Service Specs
   useEffect(() => {
@@ -400,13 +410,21 @@ export default function ServiceDetailPage({ params }: PageProps) {
           if (detailModel.detailConfig.isShowColor) {
             loadColors();
           }
-          if (detailModel.detailConfig.isShowSize) {
-            loadSizes();
-          }
           if (detailModel.detailConfig.isShowGuidelinesPolicies) {
             loadPackageDetails();
           }
+          if (raw.detail_config?.is_show_colors === 1) loadColors();
+          if (raw.detail_config?.is_show_sizes === 1) loadSizes();
+          
           loadReviews();
+
+          // Load frequently-bought & recommendations
+          api.get(`/api/v1/${endpointPath}/frequently-bought`).then((res: any) => {
+            if (res.status && res.data) setFrequentlyBought(res.data);
+          });
+          api.get(`/api/v1/${endpointPath}/recommendations`).then((res: any) => {
+            if (res.status && res.data) setRecommendations(res.data);
+          });
         }
       } catch (e) {
         console.error('Error fetching service details:', e);
@@ -1056,7 +1074,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
         <section className={styles.gallery}>
           <div
             className={styles.galleryHero}
-            style={{ backgroundImage: `url(${detail.imageUrl})` }}
+            style={{ backgroundImage: `url(${galleryImages[0]})` }}
             onClick={() => {
               setActivePhotoIdx(0);
               setIsLightboxOpen(true);
@@ -2020,7 +2038,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
       {/* PICTURE LIGHTBOX MODAL */}
       {isLightboxOpen && (
-        <div className={styles.glbOverlay}>
+        <div className={`${styles.glbOverlay} ${styles.glbOverlayOpen}`}>
           <button className={styles.glbClose} onClick={() => setIsLightboxOpen(false)}>
             <i className="bx bx-x"></i>
           </button>
@@ -2461,6 +2479,36 @@ export default function ServiceDetailPage({ params }: PageProps) {
           </div>
         );
       })()}
+
+      {frequentlyBought.length > 0 && (
+        <section style={{ maxWidth: '1280px', margin: '40px auto', padding: '0 20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px' }}>Frequently Bought Together</h2>
+          <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }}>
+            {frequentlyBought.map((item, idx) => (
+              <div key={idx} style={{ minWidth: '220px', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px' }}>
+                <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
+                <h3 style={{ fontSize: '15px', fontWeight: '600', marginTop: '12px' }}>{item.name}</h3>
+                <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: '600', marginTop: '6px' }}>{formatPrice(item.price)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recommendations.length > 0 && (
+        <section style={{ maxWidth: '1280px', margin: '40px auto 60px', padding: '0 20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px' }}>Recommended for You</h2>
+          <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }}>
+            {recommendations.map((item, idx) => (
+              <div key={idx} style={{ minWidth: '220px', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px' }}>
+                <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
+                <h3 style={{ fontSize: '15px', fontWeight: '600', marginTop: '12px' }}>{item.name}</h3>
+                <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: '600', marginTop: '6px' }}>{formatPrice(item.price)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Footer />
     </>

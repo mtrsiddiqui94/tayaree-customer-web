@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { ToastProvider } from "@/context/ToastContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -31,7 +33,11 @@ export default function RootLayout({
       </head>
       <body>
         <ToastProvider>
-          {children}
+          <AuthProvider>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

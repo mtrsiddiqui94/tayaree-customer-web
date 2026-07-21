@@ -1,0 +1,83 @@
+.page { max-width: 1280px; margin: 0 auto; padding: 0 40px 90px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); padding: 20px 0 18px; flex-wrap: wrap; }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.sep { color: var(--border); }
+.current { color: var(--text-primary); font-weight: 600; }
+
+.gallery { display: grid; grid-template-columns: 1fr 220px; grid-template-rows: 170px 170px; gap: 6px; border-radius: var(--radius-l); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-md); }
+.gallery a { display: block; overflow: hidden; position: relative; background: var(--input-bg); }
+.gallery img { width: 100%; height: 100%; object-fit: cover; transition: .3s; }
+.gallery a:hover img { transform: scale(1.04); }
+.gHero { grid-row: 1/3; position: relative; }
+.gHeroBadge { position: absolute; top: 16px; left: 16px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 800; padding: 7px 14px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow-btn); }
+
+.detailGrid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+
+.svcHeaderRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.svcHeaderMain { flex: 1; min-width: 0; }
+.mSquare { display: inline-flex; width: 42px; height: 42px; border-radius: 11px; background: #C8920A; color: #fff; font-weight: 900; font-size: 23px; align-items: center; justify-content: center; flex-shrink: 0; }
+.svcEyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary); display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.svcTitle { font-size: 27px; font-weight: 800; letter-spacing: -0.7px; margin: 0 0 9px; }
+.svcMeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+.dot { color: var(--border); }
+.metaChip2 { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--text-primary); }
+.metaChip2 .star { color: var(--amber); }
+.svcVendor { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--text-primary); }
+.svcDesc { margin-top: 22px; }
+.svcDescHeading { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.descBody { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+.descClamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.descTags { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+.descTag { padding: 4px 12px; background: var(--surface); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: var(--text-secondary); border: 1px solid var(--border); }
+
+.mtabs { display: flex; gap: 8px; margin: 26px 0 0; flex-wrap: wrap; }
+.mtab { display: flex; align-items: center; gap: 9px; padding: 11px 16px; border-radius: var(--radius-m) var(--radius-m) 0 0; border: 1px solid var(--border); border-bottom: none; background: var(--surface); cursor: pointer; font-family: inherit; position: relative; top: 1px; }
+.mtabIc { width: 28px; height: 28px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.mtabName { font-size: 13.5px; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap; }
+.mtabActive { background: var(--card); border-color: var(--border); }
+.mtabActive .mtabName { color: var(--primary); }
+.tabBody { border: 1px solid var(--border); border-radius: 0 var(--radius-m) var(--radius-m) var(--radius-m); background: var(--card); padding: 26px 28px; }
+
+/* Booking fields mirror */
+.bookingSummary { background: var(--surface); border-radius: var(--radius-m); padding: 16px; }
+.bsDate { font-size: 13.5px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.2px; }
+.pbRow { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12.5px; }
+.pbLbl { color: var(--text-secondary); }
+.pbVal { font-weight: 700; }
+.pbValGreen { color: var(--success); }
+.pbSep { height: 1px; background: var(--border); margin: 10px 0; border: none; }
+.pbRowStrong { display: flex; justify-content: space-between; font-size: 13.5px; font-weight: 800; padding: 3px 0; }
+.primary { color: var(--primary); }
+
+.msum { background: var(--card); border: 1.5px solid var(--primary); border-radius: var(--radius-l); box-shadow: var(--shadow-md); overflow: hidden; position: sticky; top: 84px; }
+.msumTop { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.msumTopL { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 800; letter-spacing: 0.4px; }
+.msumMchip { display: inline-flex; width: 24px; height: 24px; border-radius: 6px; background: #C8920A; color: #fff; font-weight: 900; font-size: 13px; align-items: center; justify-content: center; }
+.msumCount { background: rgba(255,255,255,0.16); border-radius: var(--radius-full); padding: 5px 11px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.msumBody { padding: 16px 18px; }
+.msumLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; }
+.msumRow { border: 1px solid var(--border); border-radius: var(--radius-m); padding: 12px 13px; margin-bottom: 10px; cursor: pointer; transition: .15s; }
+.msumRow:hover { border-color: var(--text-muted); }
+.msumRowActive { border-color: var(--primary); background: var(--primary-light); }
+.msumRowHead { display: flex; align-items: center; gap: 10px; }
+.msumRowIc { width: 32px; height: 32px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.msumRowMain { flex: 1; min-width: 0; }
+.msumRowName { font-size: 13px; font-weight: 800; }
+.msumRowMeta { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+.msumRowAmt { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; }
+.msumRowFoot { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--border); }
+.msumItemsBtn { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); background: none; border: none; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0; }
+.msumItemsBtn:hover { color: var(--primary); }
+.msumRowOrig { font-size: 11px; color: var(--text-muted); text-decoration: line-through; }
+.msumTot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 20px; }
+.msumGrand { display: flex; align-items: baseline; justify-content: space-between; padding-top: 10px; margin-top: 4px; border-top: 1.5px solid var(--border); }
+.msumGrandL { font-size: 13.5px; font-weight: 800; }
+.msumGrandV { font-size: 22px; font-weight: 900; color: var(--primary); letter-spacing: -0.6px; }
+.msumSave { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(26,122,54,0.09); color: var(--success); font-size: 13.5px; font-weight: 800; padding: 16px; border-radius: var(--radius-m); margin-top: 18px; }
+.msumAck { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; cursor: pointer; margin-top: 20px; }
+.msumAck input { width: 17px; height: 17px; accent-color: var(--primary); flex-shrink: 0; margin-top: 1px; }
+.msumAck b { color: var(--text-primary); }
+.msumAdd { width: 100%; height: 52px; margin-top: 20px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-full); font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: var(--shadow-btn); display: flex; align-items: center; justify-content: center; gap: 9px; transition: .15s; }
+.msumAdd:hover { background: var(--primary-dark); }
+.msumAddDisabled { opacity: .5; pointer-events: none; box-shadow: none; }

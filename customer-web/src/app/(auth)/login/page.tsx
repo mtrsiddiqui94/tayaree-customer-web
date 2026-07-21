@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from '../auth.module.css';
 
 interface LoginResponse {
@@ -29,7 +31,10 @@ const formatPhoneNumber = (value: string) => {
 export default function LoginPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { login } = useAuth();
   const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState('PK');
+  const [phonePrefix, setPhonePrefix] = useState('+92');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -97,18 +102,17 @@ export default function LoginPage() {
         cleanPhone = cleanPhone.replace(/^0/, '');
       }
 
-      const fullPhoneNumber = `+92${cleanPhone}`;
+      const fullPhoneNumber = `${phonePrefix}${cleanPhone}`;
 
-      const response = await api.post<LoginResponse>('/api/v1/auth/login', {
+      const response = await api.post<LoginResponse>(ENDPOINTS.AUTH_LOGIN, {
         phone: fullPhoneNumber,
-        phone_country: 'PK',
+        phone_country: phoneCountry,
         password: password,
       });
 
       if (response.data?.authorization?._token) {
         // Successful login
-        localStorage.setItem('access_token', response.data.authorization._token);
-        localStorage.setItem('phone', response.data.phone);
+        login(response.data.authorization._token, response.data.phone);
         showToast('Welcome back! Successfully logged in.', 'success');
         router.push('/');
       } else if (response.data?.otp_verification === 0) {
@@ -117,7 +121,7 @@ export default function LoginPage() {
         router.push(
           `/verify-otp?phone=${encodeURIComponent(
             fullPhoneNumber
-          )}&country=PK&flow=signup`
+          )}&country=${phoneCountry}&flow=signup`
         );
       } else {
         showToast(response.message || 'Login failed. Please try again.', 'error');
@@ -200,7 +204,7 @@ export default function LoginPage() {
                   }`}
                 >
                   <i className="bx bx-phone lead"></i>
-                  <span className={styles.fldCc}>+92</span>
+                  <span className={styles.fldCc}>{phonePrefix}</span>
                   <input
                     type="tel"
                     placeholder="3XX XXXXXXX"

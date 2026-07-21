@@ -150,14 +150,15 @@
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-  height: 100%;
+  height: calc(100vh - 120px);
+  min-height: 580px;
   border: 1px solid var(--border);
 }
 
 .chatRoomBar {
   background: var(--primary);
   padding: 14px 20px;
-  border-radius: var(--radius-m) var(--radius-m) var(--radius-l) var(--radius-l);
+  border-radius: var(--radius-m) var(--radius-m) var(--radius-full) var(--radius-full);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -302,8 +303,8 @@
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #F8F9FA;
+  gap: 2px;
+  background: var(--bg);
 }
 
 .dateSep {
@@ -359,8 +360,7 @@
   background: var(--card);
   color: var(--text-primary);
   border-radius: 18px 18px 18px 4px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .bubbleMeta {
@@ -539,8 +539,7 @@
   background: var(--card);
   border-radius: 18px 18px 18px 4px;
   width: fit-content;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .typingDot {
@@ -644,4 +643,16 @@
 .chatMicBtn:hover {
   background: var(--primary-dark);
   transform: scale(1.06);
+}
+
+.chatMicBtn.recording {
+  background: var(--primary-dark);
+  transform: scale(1.15);
+  box-shadow: 0 0 15px rgba(215, 25, 33, 0.4);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
 }

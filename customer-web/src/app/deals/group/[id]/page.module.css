@@ -1,0 +1,66 @@
+.page { max-width: 1280px; margin: 0 auto; padding: 0 40px 90px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); padding: 20px 0 18px; flex-wrap: wrap; }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.sep { color: var(--border); }
+.current { color: var(--text-primary); font-weight: 600; }
+
+.gallery { display: grid; grid-template-columns: 1fr 220px; grid-template-rows: 190px 190px; gap: 6px; border-radius: var(--radius-l); overflow: hidden; margin-bottom: 26px; box-shadow: var(--shadow-md); }
+.gallery a { display: block; overflow: hidden; position: relative; background: var(--input-bg); }
+.gallery img { width: 100%; height: 100%; object-fit: cover; transition: .3s; }
+.gallery a:hover img { transform: scale(1.04); }
+.gHero { grid-row: 1/3; position: relative; }
+.gHeroBadge { position: absolute; top: 16px; left: 16px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 800; padding: 7px 14px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow-btn); }
+
+.detailGrid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+
+.svcEyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary); display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.svcTitle { font-size: 28px; font-weight: 800; letter-spacing: -0.7px; margin: 9px 0 10px; }
+.svcMeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+.svcMeta .dot { color: var(--border); }
+.metaChip { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--text-primary); }
+.metaChip .star { color: var(--amber); }
+.svcVendor { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--text-primary); }
+
+.lead { font-size: 14px; line-height: 1.7; color: var(--text-secondary); margin-top: 20px; }
+
+.secTitle { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; margin: 30px 0 14px; display: flex; align-items: center; gap: 9px; }
+.secTitle i { color: var(--primary); font-size: 20px; }
+
+.incCard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-m); overflow: hidden; }
+.incRow { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.incRow:last-child { border-bottom: none; }
+.incIc { width: 42px; height: 42px; border-radius: var(--radius-s); background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+.incMain { flex: 1; min-width: 0; }
+.incName { font-size: 14px; font-weight: 700; }
+.incNote { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.incCheck { color: var(--success); font-size: 20px; flex-shrink: 0; }
+
+.gdPanel { background: var(--card); border: 1.5px solid var(--primary); border-radius: var(--radius-l); box-shadow: var(--shadow-md); overflow: hidden; position: sticky; top: 84px; }
+.gdTop { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gdTopL { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; letter-spacing: 0.5px; }
+.gdTimer { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); border-radius: var(--radius-full); padding: 5px 11px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.gdBody { padding: 20px; }
+.gdPriceRow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.gdPrice { font-size: 32px; font-weight: 900; color: var(--primary); letter-spacing: -1px; }
+.gdPer { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.gdOrig { font-size: 15px; color: var(--text-muted); text-decoration: line-through; font-weight: 600; }
+.gdSave { display: inline-flex; align-items: center; gap: 4px; background: rgba(26,122,54,0.1); color: var(--success); font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: var(--radius-full); margin-top: 8px; }
+.gdUnit { font-size: 12.5px; color: var(--text-secondary); margin-top: 8px; }
+
+.gdProgWrap { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-m); padding: 14px 15px; }
+.gdProgTop { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
+.gdProgTop .u { color: var(--primary); }
+.gdProg { height: 8px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.gdProgFill { height: 100%; background: var(--primary); border-radius: 5px; transition: width .4s; }
+.gdProgFillDone { background: var(--success); }
+.gdProgNote { font-size: 12px; margin-top: 9px; display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.gdProgNoteUnlocked { color: var(--success); font-weight: 700; }
+
+.gdDivider { height: 1px; background: var(--border); margin: 20px 0; }
+.gdFldLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; display: block; }
+.gdInput { width: 100%; height: 46px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: var(--radius-m); padding: 0 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-primary); cursor: pointer; }
+
+.gdJoin { width: 100%; height: 54px; margin-top: 20px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-full); font-family: inherit; font-size: 15.5px; font-weight: 800; cursor: pointer; box-shadow: var(--shadow-btn); display: flex; align-items: center; justify-content: center; gap: 9px; text-decoration: none; transition: .15s; }
+.gdJoin:hover { background: var(--primary-dark); }
+.gdJoinDisabled { opacity: .5; pointer-events: none; box-shadow: none; }

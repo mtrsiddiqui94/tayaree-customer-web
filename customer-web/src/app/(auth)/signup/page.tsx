@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from '../auth.module.css';
 
 interface RegisterResponse {
@@ -22,11 +24,14 @@ const formatPhoneNumber = (value: string) => {
 export default function SignupPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { login } = useAuth();
   
   // Input States
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState('PK');
+  const [phonePrefix, setPhonePrefix] = useState('+92');
   const [password, setPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -131,13 +136,13 @@ export default function SignupPage() {
         cleanPhone = cleanPhone.replace(/^0/, '');
       }
 
-      const fullPhoneNumber = `+92${cleanPhone}`;
+      const fullPhoneNumber = `${phonePrefix}${cleanPhone}`;
 
-      await api.post<RegisterResponse>('/api/v1/auth/register', {
+      await api.post<RegisterResponse>(ENDPOINTS.AUTH_REGISTER, {
         full_name: fullName.trim(),
         email: email.trim(),
         phone: fullPhoneNumber,
-        phone_country: 'PK',
+        phone_country: phoneCountry,
         password: password,
         password_confirmation: password,
       });
@@ -147,7 +152,7 @@ export default function SignupPage() {
       router.push(
         `/verify-otp?phone=${encodeURIComponent(
           fullPhoneNumber
-        )}&country=PK&flow=signup`
+        )}&country=${phoneCountry}&flow=signup`
       );
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Registration failed. Please try again.';
@@ -280,7 +285,7 @@ export default function SignupPage() {
                   }`}
                 >
                   <i className="bx bx-phone lead"></i>
-                  <span className={styles.fldCc}>+92</span>
+                  <span className={styles.fldCc}>{phonePrefix}</span>
                   <input
                     type="tel"
                     placeholder="3XX XXXXXXX"

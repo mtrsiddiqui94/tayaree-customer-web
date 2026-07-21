@@ -37,158 +37,14 @@ interface OrderPackage {
   amountPaid: number;
   paidPercent: number;
   cancellationFee: number;
+  feePercent: number;
+  feeTier: string;
   refundAmount: number;
   isSelectable: boolean;
   restrictReason?: string;
   items: PackageItem[];
   schedule: PaymentInst[];
 }
-
-const MOCK_PACKAGES: OrderPackage[] = [
-  {
-    id: "pkg-1",
-    key: "catering",
-    name: "Royal Biryani Catering",
-    vendor: "Amber's Kitchen",
-    img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=200&h=200&q=80",
-    status: "confirmed",
-    statusLabel: "Confirmed",
-    statusClass: "confirmed",
-    metaGuests: "150 Guests",
-    metaItems: "4 Items",
-    deliveryDate: "15 Mar 2025",
-    packageAmount: 114750,
-    amountPaid: 34425,
-    paidPercent: 30,
-    cancellationFee: 3443,
-    refundAmount: 30982,
-    isSelectable: true,
-    items: [
-      { name: "Chicken Biryani", img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" },
-      { name: "Beef Pulao", img: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" },
-      { name: "Raita & Salad", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" },
-      { name: "Kheer", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" }
-    ],
-    schedule: [
-      { label: "Booking Deposit", date: "Paid · at checkout", amount: 34425, status: "paid" },
-      { label: "Final Balance", date: "Due March 10, 2025", amount: 80325, status: "future" }
-    ]
-  },
-  {
-    id: "pkg-2",
-    key: "photography",
-    name: "Premium Photography & Videography",
-    vendor: "Lens & Light Studio",
-    img: "https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?auto=format&fit=crop&w=200&h=200&q=80",
-    status: "confirmed",
-    statusLabel: "Confirmed",
-    statusClass: "confirmed",
-    metaGuests: "200 Guests",
-    metaItems: "4 Items",
-    deliveryDate: "17 – 29 Mar 2025",
-    packageAmount: 85000,
-    amountPaid: 25500,
-    paidPercent: 30,
-    cancellationFee: 2550,
-    refundAmount: 22950,
-    isSelectable: true,
-    items: [
-      { name: "Photography", img: "https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?auto=format&fit=crop&w=200&h=160&q=80", variation: "12 Hours" },
-      { name: "Videography", img: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=200&h=160&q=80", variation: "8 Hours" },
-      { name: "Drone Shots", img: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" },
-      { name: "Highlights Reel", img: "https://images.unsplash.com/photo-1598300056393-4afd99d1d79a?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" }
-    ],
-    schedule: [
-      { label: "Booking Deposit", date: "Paid · at checkout", amount: 25500, status: "paid" },
-      { label: "Final Balance", date: "Due March 10, 2025", amount: 59500, status: "future" }
-    ]
-  },
-  {
-    id: "pkg-3",
-    key: "florals",
-    name: "Floral Decoration — Grand Hall",
-    vendor: "Rose Garden Events",
-    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=200&h=200&q=80",
-    status: "confirmed",
-    statusLabel: "Confirmed",
-    statusClass: "confirmed",
-    metaGuests: "Stage + Hall",
-    metaItems: "3 Items",
-    deliveryDate: "15 Mar 2025",
-    packageAmount: 45000,
-    amountPaid: 45000,
-    paidPercent: 100,
-    cancellationFee: 4500,
-    refundAmount: 40500,
-    isSelectable: true,
-    items: [
-      { name: "Stage Backdrop", img: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=200&h=160&q=80", variation: "Red & White" },
-      { name: "Entrance Arch", img: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" },
-      { name: "Table Centerpieces", img: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=200&h=160&q=80", variation: "×15" }
-    ],
-    schedule: [
-      { label: "Paid in Full", date: "Paid · at checkout", amount: 45000, status: "full" }
-    ]
-  },
-  {
-    id: "pkg-4",
-    key: "sound",
-    name: "Sound & Lighting Setup",
-    vendor: "SoundWave Productions",
-    img: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&h=200&q=80",
-    status: "transit",
-    statusLabel: "In Transit",
-    statusClass: "transit",
-    metaGuests: "Standard",
-    metaItems: "5 Items",
-    deliveryDate: "14 Mar 2025",
-    packageAmount: 60000,
-    amountPaid: 60000,
-    paidPercent: 100,
-    cancellationFee: 6000,
-    refundAmount: 54000,
-    isSelectable: false,
-    restrictReason: "In-transit packages can't be cancelled",
-    items: [
-      { name: "Line Array Speakers", img: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&h=160&q=80", variation: "×4" },
-      { name: "Subwoofers", img: "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=200&h=160&q=80", variation: "×2" },
-      { name: "Wireless Mics", img: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=200&h=160&q=80", variation: "×6" },
-      { name: "LED Par Lights", img: "https://images.unsplash.com/photo-1504509546545-e000b4a62425?auto=format&fit=crop&w=200&h=160&q=80", variation: "×12" },
-      { name: "DJ Console", img: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?auto=format&fit=crop&w=200&h=160&q=80", variation: "Standard" }
-    ],
-    schedule: [
-      { label: "Paid in Full", date: "Paid · at checkout", amount: 60000, status: "full" }
-    ]
-  },
-  {
-    id: "pkg-5",
-    key: "couture",
-    name: "Bride & Groom Couture",
-    vendor: "Élan Atelier",
-    img: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=200&h=200&q=80",
-    status: "delivered",
-    statusLabel: "Delivered",
-    statusClass: "delivered",
-    metaGuests: "Standard",
-    metaItems: "2 Items",
-    deliveryDate: "12 Mar 2025",
-    packageAmount: 80000,
-    amountPaid: 24000,
-    paidPercent: 30,
-    cancellationFee: 2400,
-    refundAmount: 21600,
-    isSelectable: false,
-    restrictReason: "Delivered packages can't be cancelled",
-    items: [
-      { name: "Bridal Lehenga", img: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=200&h=160&q=80", variation: "Red · M" },
-      { name: "Groom Sherwani", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=160&q=80", variation: "Ivory · L" }
-    ],
-    schedule: [
-      { label: "Booking Deposit", date: "Paid · at checkout", amount: 24000, status: "paid" },
-      { label: "Final Balance", date: "Due March 10, 2025", amount: 56000, status: "future" }
-    ]
-  }
-];
 
 const REASONS = [
   "Event date changed",
@@ -199,12 +55,14 @@ const REASONS = [
   "Other"
 ];
 
+
+
 export default function CancelOrderPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params?.id as string || 'TAY-20250315-001';
 
-  const [packages, setPackages] = useState<OrderPackage[]>(MOCK_PACKAGES);
+  const [packages, setPackages] = useState<OrderPackage[]>([]);
   const [selectedPkgIds, setSelectedPkgIds] = useState<string[]>([]);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [reasonComment, setReasonComment] = useState('');
@@ -212,7 +70,7 @@ export default function CancelOrderPage() {
   // Collapse details tracking
   const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
   const [isOrderAmtOpen, setIsOrderAmtOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -220,7 +78,124 @@ export default function CancelOrderPage() {
       router.push(`/login?redirect=/orders/${orderId}/cancel`);
       return;
     }
+    loadOrderDetails();
   }, [orderId]);
+
+  async function loadOrderDetails() {
+    try {
+      setIsLoading(true);
+      const numOrderId = parseInt(orderId as string, 10);
+      const res = await api.get<{ status: boolean; data: any[] }>('/api/v1/order/list?limit=50&page=1');
+      if (res.status && res.data) {
+        let found: any = null;
+        for (const section of res.data) {
+          const bodyList = section.body || [];
+          const match = bodyList.find((ord: any) => ord.order_id === numOrderId);
+          if (match) {
+            found = match;
+            break;
+          }
+        }
+
+        if (found) {
+          try {
+            const detailRes = await api.get<{status: boolean, data: any}>(`/api/v1/order/items/${found.order_package_line_id}/detail/${found.order_id}?is_full=1`);
+            if (detailRes.status && detailRes.data) {
+              const d = detailRes.data;
+              const loadedPackages: OrderPackage[] = (d.line_item || []).map((pkg: any) => {
+                const pkgAmount = pkg.amount || pkg.order_total || 0;
+                const amtPaid = pkg.paid || 0;
+                const paidPercent = pkgAmount > 0 ? Math.round((amtPaid / pkgAmount) * 100) : 0;
+                
+                const fee = pkg.refund_estimate?.fee_amount || 0;
+                const refundAmount = pkg.refund_estimate?.refund_amount || 0;
+                const feePercent = pkg.refund_estimate?.fee_percentage || 0;
+                const feeTier = pkg.refund_estimate?.tier_label || `${feePercent}%`;
+                
+                const isDel = pkg.package_status === 'Delivered';
+                const isTrans = pkg.package_status === 'In Transit';
+                const selectable = !isDel && !isTrans;
+
+                return {
+                  id: pkg.order_item_id?.toString() || Math.random().toString(),
+                  key: 'custom',
+                  name: pkg.item_name || 'unset',
+                  vendor: pkg.vendor_name || 'unset',
+                  img: pkg.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80',
+                  status: isDel ? 'delivered' : isTrans ? 'transit' : 'confirmed',
+                  statusLabel: pkg.package_status || 'Confirmed',
+                  statusClass: isDel ? 'delivered' : isTrans ? 'transit' : 'confirmed',
+                  metaGuests: (pkg.no_of_guests || 'N/A') + ' Guests',
+                  metaItems: (pkg.quantity || 1) + ' Items',
+                  deliveryDate: pkg.delivery_date || 'unset',
+                  packageAmount: pkgAmount,
+                  amountPaid: amtPaid,
+                  paidPercent: paidPercent,
+                  cancellationFee: fee,
+                  feePercent: feePercent,
+                  feeTier: feeTier,
+                  refundAmount: refundAmount,
+                  isSelectable: selectable,
+                  restrictReason: isDel ? "Delivered packages can't be cancelled" : isTrans ? "In-transit packages can't be cancelled" : undefined,
+                  items: [{ name: pkg.item_name || 'unset', img: pkg.image_url || '', variation: 'Standard' }],
+                  schedule: [
+                    { label: "Booking Deposit", date: "Paid · at checkout", amount: amtPaid, status: "paid" as const },
+                    { label: "Final Balance", date: "Due before event", amount: pkgAmount - amtPaid, status: "future" as const }
+                  ]
+                };
+              });
+
+              if(loadedPackages.length === 0) {
+                 const pkgAmount = found.total_amount || 0;
+                 const amtPaid = found.paid || 0; 
+                 const paidPercent = pkgAmount > 0 ? Math.round((amtPaid / pkgAmount) * 100) : 0;
+                 const fee = found.refund_estimate?.fee_amount || 0;
+                 const refundAmount = found.refund_estimate?.refund_amount || 0;
+                 const feePercent = found.refund_estimate?.fee_percentage || 0;
+                 const feeTier = found.refund_estimate?.tier_label || `${feePercent}%`;
+
+                 loadedPackages.push({
+                   id: found.order_id?.toString() || '1',
+                   key: 'custom',
+                   name: found.package_name || 'Custom Package',
+                   vendor: found.vendor_name || 'Vendor',
+                   img: found.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80',
+                   status: 'confirmed',
+                   statusLabel: found.package_status || 'Confirmed',
+                   statusClass: 'confirmed',
+                   metaGuests: (found.no_of_guests || 'N/A') + ' Guests',
+                   metaItems: (found.quantity || 1) + ' Items',
+                   deliveryDate: found.delivery_date || 'unset',
+                   packageAmount: pkgAmount,
+                   amountPaid: amtPaid,
+                   paidPercent: paidPercent,
+                   cancellationFee: fee,
+                   feePercent: feePercent,
+                   feeTier: feeTier,
+                   refundAmount: refundAmount,
+                   isSelectable: true,
+                   items: [{ name: found.package_name || 'unset', img: found.image_url || '', variation: 'Standard' }],
+                   schedule: [
+                     { label: "Booking Deposit", date: "Paid", amount: amtPaid, status: "paid" as const },
+                     { label: "Final Balance", date: "Due", amount: pkgAmount - amtPaid, status: "future" as const }
+                   ]
+                 });
+              }
+              setPackages(loadedPackages);
+              setIsLoading(false);
+              return;
+            }
+          } catch(err) {
+            console.error('Detail fetch error', err);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const togglePackage = (pkg: OrderPackage) => {
     if (!pkg.isSelectable) return;
@@ -243,8 +218,8 @@ export default function CancelOrderPage() {
   // Calculations
   const selectedPackages = packages.filter(p => selectedPkgIds.includes(p.id));
   const amountPaidSoFar = selectedPackages.reduce((acc, curr) => acc + curr.amountPaid, 0);
-  const cancellationFeeTotal = Math.round(amountPaidSoFar * 0.10);
-  const refundTotal = amountPaidSoFar - cancellationFeeTotal;
+  const cancellationFeeTotal = selectedPackages.reduce((acc, curr) => acc + curr.cancellationFee, 0);
+  const refundTotal = selectedPackages.reduce((acc, curr) => acc + curr.refundAmount, 0);
 
   const isFormValid = selectedPkgIds.length > 0 && selectedReason !== null;
 
@@ -266,22 +241,25 @@ export default function CancelOrderPage() {
     router.push(`/orders/${orderId}/cancel/summary`);
   };
 
+  if (isLoading) {
+    return (
+      <>
+      <Header />
+      <main className={styles.page}>
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
+          <p style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>Loading packages...</p>
+        </div>
+      </main>
+      <Footer />
+    </>
+    );
+  }
+
   return (
     <>
       <Header />
-
-      <main className={styles.page}>
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <Link href="/orders">My Orders</Link>
-          <span className={styles.sep}>/</span>
-          <Link href={`/orders/${orderId}`}>Order Details</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>Cancel Order</span>
-        </div>
-
-        <div className={styles.pageHead}>
+      <main className={styles.page}>        <div className={styles.pageHead}>
           <div>
             <h2 className={styles.pageTitle}>Cancel Order</h2>
             <p className={styles.pageSub}>Select the packages you&apos;d like to cancel and review your refund before confirming.</p>
@@ -377,7 +355,7 @@ export default function CancelOrderPage() {
                               <span className={styles.ciPrVal}>PKR {formatAmount(pkg.amountPaid)}</span>
                             </div>
                             <div className={styles.ciPr}>
-                              <span className={styles.ciPrLbl}>Cancellation Fee (10%)</span>
+                              <span className={styles.ciPrLbl}>Cancellation Fee ({pkg.feeTier})</span>
                               <span className={`${styles.ciPrVal} ${styles.amber}`}>
                                 − PKR {formatAmount(pkg.cancellationFee)}
                               </span>
@@ -643,9 +621,7 @@ export default function CancelOrderPage() {
               </div>
             </div>
           </aside>
-        </div>
-      </main>
-
+        </div>      </main>
       <Footer />
     </>
   );

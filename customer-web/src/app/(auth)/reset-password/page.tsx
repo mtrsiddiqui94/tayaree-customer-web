@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from '../auth.module.css';
 
 interface ResetPasswordResponse {
@@ -101,7 +102,7 @@ function ResetPasswordContent() {
     setIsLoading(true);
 
     try {
-      const response = await api.post<ResetPasswordResponse>('/api/v1/auth/reset-password', {
+      const response = await api.post<ResetPasswordResponse>(ENDPOINTS.AUTH_RESET_PASSWORD, {
         _token: token,
         password: password,
         password_confirmation: confirmPassword,

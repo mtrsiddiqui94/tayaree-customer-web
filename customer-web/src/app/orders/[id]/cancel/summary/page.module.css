@@ -1,3 +1,17 @@
+
+.page { max-width:1280px; margin:0 auto; padding:0 40px 100px; }
+@media(max-width:768px) { .page { padding: 0 16px 80px; } }
+.breadcrumb { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); padding:22px 0 18px; }
+.breadcrumb a { color:var(--text-muted); text-decoration:none; }
+.breadcrumb a:hover { color:var(--primary); }
+.breadcrumb .sep { opacity:0.4; }
+.breadcrumb .current { color:var(--text-secondary); font-weight:500; }
+.pageHead { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; }
+.pageTitle { font-size:24px; font-weight:800; letter-spacing:-0.7px; }
+.pageSub { font-size:13px; color:var(--text-muted); margin-top:4px; }
+.backLink { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--text-secondary); text-decoration:none; padding:9px 16px; border:1px solid var(--border); border-radius:var(--radius-full); background:var(--card); transition:.15s; white-space:nowrap; }
+.backLink:hover { border-color:var(--primary); color:var(--primary); }
+
 .layout {
   display: grid;
   grid-template-columns: 1fr 380px;

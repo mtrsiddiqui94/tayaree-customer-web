@@ -736,8 +736,6 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
-  border-bottom: 1.5px solid var(--border);
-  padding-bottom: 8px;
 }
 
 .catRowMeta {
@@ -798,5 +796,52 @@
 
 .scrollRow .serviceCard {
   flex: 0 0 240px;
+  scroll-snap-align: start;
 }
 
+.scrollWrap {
+  position: relative;
+}
+
+.scrollArrow {
+  position: absolute;
+  top: 0;
+  height: 135px;
+  width: 40px;
+  background: rgba(15, 15, 15, 0.68);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, background 0.15s;
+}
+
+.scrollWrap:hover .scrollArrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scrollArrow:hover {
+  background: rgba(15, 15, 15, 0.95);
+}
+
+.scrollArrowLeft {
+  left: 0;
+  border-radius: 0 5px 5px 0;
+}
+
+.scrollArrowRight {
+  right: 0;
+  border-radius: 5px 0 0 5px;
+}
+
+.scrollArrow.atEdge {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

@@ -46,10 +46,14 @@ function SearchContent() {
   const { showToast } = useToast();
   
   const queryParam = searchParams.get('q') || '';
+  const pageParam = parseInt(searchParams.get('page') || '1', 10);
+  const limitParam = parseInt(searchParams.get('limit') || '30', 10);
 
   // Inputs
   const [searchInputValue, setSearchInputValue] = useState(queryParam);
   const [activeQuery, setActiveQuery] = useState(queryParam);
+  const [currentPage, setCurrentPage] = useState(pageParam);
+  const [currentLimit, setCurrentLimit] = useState(limitParam);
 
   // Data States
   const [services, setServices] = useState<Service[]>([]);
@@ -68,11 +72,11 @@ function SearchContent() {
   const trendingChips = ['Catering', 'Banquets', 'Decorators', 'Mehndi', 'Portraits'];
 
   // API search call
-  const performSearch = async (searchVal: string) => {
+  const performSearch = async (searchVal: string, page = currentPage, limit = currentLimit) => {
     setIsLoading(true);
     try {
       const res = await api.get<{ status: boolean; data: Service[] }>(
-        `/api/v1/services/search?limit=30&page=1&search=${encodeURIComponent(
+        `/api/v1/services/search?limit=${limit}&page=${page}&search=${encodeURIComponent(
           searchVal
         )}`
       );
@@ -134,15 +138,17 @@ function SearchContent() {
     const timer = setTimeout(() => {
       setSearchInputValue(queryParam);
       setActiveQuery(queryParam);
+      setCurrentPage(pageParam);
+      setCurrentLimit(limitParam);
       if (queryParam) {
-        performSearch(queryParam);
+        performSearch(queryParam, pageParam, limitParam);
         saveSearchQuery(queryParam);
       } else {
         setServices([]);
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [queryParam]);
+  }, [queryParam, pageParam, limitParam]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -641,14 +647,29 @@ function SearchContent() {
 
                   {filteredServices.length > 0 && (
                     <div className={styles.pagination}>
-                      <button className={`${styles.pgBtn} ${styles.pgBtnDisabled}`}>
+                      <button 
+                        onClick={() => router.push(`/search?q=${encodeURIComponent(activeQuery)}&page=${Math.max(1, currentPage - 1)}&limit=${currentLimit}`)}
+                        className={`${styles.pgBtn} ${currentPage === 1 ? styles.pgBtnDisabled : ''}`}
+                        disabled={currentPage === 1}
+                      >
                         <i className="bx bx-chevron-left"></i>
                       </button>
+                      
                       <button className={`${styles.pgBtn} ${styles.pgBtnActive}`}>
-                        1
+                        {currentPage}
                       </button>
-                      <button className={styles.pgBtn}>2</button>
-                      <button className={styles.pgBtn}>
+                      
+                      <button 
+                        onClick={() => router.push(`/search?q=${encodeURIComponent(activeQuery)}&page=${currentPage + 1}&limit=${currentLimit}`)}
+                        className={styles.pgBtn}
+                      >
+                        {currentPage + 1}
+                      </button>
+                      
+                      <button 
+                        onClick={() => router.push(`/search?q=${encodeURIComponent(activeQuery)}&page=${currentPage + 1}&limit=${currentLimit}`)}
+                        className={styles.pgBtn}
+                      >
                         <i className="bx bx-chevron-right"></i>
                       </button>
                     </div>

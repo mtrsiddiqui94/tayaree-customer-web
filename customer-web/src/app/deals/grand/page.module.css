@@ -1,0 +1,40 @@
+.page { max-width: 1280px; margin: 0 auto; padding: 0 40px 90px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); padding: 20px 0; }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.sep { color: var(--border); }
+.current { color: var(--text-primary); font-weight: 600; }
+
+.dealsHero { background: linear-gradient(135deg, #A80E14, var(--primary, #D71921) 55%, #E5434A); border-radius: var(--radius-l); padding: 30px 34px; color: #fff; position: relative; overflow: hidden; margin-bottom: 24px; }
+.dealsHero::after { content: ''; position: absolute; right: -90px; bottom: -110px; width: 320px; height: 320px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+.dealsHeroBadge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); border-radius: var(--radius-full); padding: 6px 13px; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; }
+.dealsHeroT { font-size: 30px; font-weight: 800; letter-spacing: -0.8px; margin-top: 14px; position: relative; z-index: 1; }
+.dealsHeroS { font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 9px; line-height: 1.6; max-width: 600px; position: relative; z-index: 1; }
+
+.filterbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 22px; }
+.fchip { font-size: 13px; font-weight: 700; color: var(--text-secondary); background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 9px 18px; cursor: pointer; transition: .15s; display: inline-flex; align-items: center; gap: 6px; }
+.fchip:hover { background: var(--surface, #F7F7F7); color: var(--primary, #D71921); }
+.fchip.active { background: var(--primary, #D71921); border-color: var(--primary, #D71921); color: #fff; }
+
+.dealsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; }
+.grdCard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-m); overflow: hidden; text-decoration: none; color: inherit; display: flex; flex-direction: column; transition: border-color .15s, box-shadow .15s; }
+.grdCard:hover { border-color: var(--primary, #D71921); box-shadow: var(--shadow-sm); }
+.grdCover { height: 170px; position: relative; background: var(--input-bg); overflow: hidden; }
+.grdCover img { width: 100%; height: 100%; object-fit: cover; }
+.grdCover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0) 40%, rgba(0,0,0,0.35)); }
+.grdBadge { position: absolute; top: 12px; left: 12px; z-index: 2; background: var(--primary, #D71921); color: #fff; font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 5px; }
+.grdOff { position: absolute; bottom: 12px; left: 12px; z-index: 2; background: rgba(26,122,54,0.95); color: #fff; font-size: 11.5px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-full); }
+.grdBody { padding: 16px 17px 18px; flex: 1; display: flex; flex-direction: column; }
+.grdName { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: center; gap: 9px; }
+.grdOcc { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; }
+.grdStores { display: flex; align-items: center; gap: 6px; margin-top: 13px; flex-wrap: wrap; }
+.grdStoreChip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); background: var(--surface, #F7F7F7); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 4px 10px; }
+.grdPriceRow { display: flex; align-items: baseline; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
+.grdFrom { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.grdPrice { font-size: 21px; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
+.grdSep { font-size: 12.5px; color: var(--text-muted); text-decoration: line-through; font-weight: 600; }
+.grdFoot { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--border); }
+.grdSaveTxt { font-size: 11.5px; color: var(--success, #1A7A36); font-weight: 700; }
+.grdView { display: inline-flex; align-items: center; gap: 6px; background: var(--primary, #D71921); color: #fff; font-size: 12.5px; font-weight: 800; padding: 9px 16px; border-radius: var(--radius-full); text-decoration: none; box-shadow: 0 4px 14px rgba(215,25,33,0.3); }
+.grdView:hover { background: #A80E14; }
+.mBadge { display: inline-flex; width: 24px; height: 24px; border-radius: 6px; background: #C8920A; color: #fff; font-weight: 900; font-size: 14px; align-items: center; justify-content: center; flex-shrink: 0; }

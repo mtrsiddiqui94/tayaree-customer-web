@@ -365,3 +365,11 @@
     .rvPolicy{font-size:11.5px;color:var(--text-secondary);line-height:1.5;margin-top:18px;display:flex;gap:8px;align-items:flex-start}
     .rvPolicy i{color:var(--text-muted);font-size:15px;margin-top:1px;flex-shrink:0}
     .rvPolicy a{color:var(--primary);font-weight:700;text-decoration:underline;cursor:pointer}
+    .menuList { display: flex; flex-direction: column; }
+    .menuRow { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: transparent; border: none; border-bottom: 1px solid var(--border); cursor: pointer; width: 100%; text-align: left; font-family: inherit; transition: background-color 0.15s; }
+    .menuRow:hover:not(:disabled) { background: var(--surface); }
+    .menuRow:last-child { border-bottom: none; }
+    .menuRow:disabled { opacity: 0.5; cursor: not-allowed; }
+    .menuIconBox { width: 34px; height: 34px; background-color: var(--primary-light); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 16px; flex-shrink: 0; }
+    .menuTitle { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .menuRow i.bx-chevron-right { font-size: 20px; color: var(--text-muted); }

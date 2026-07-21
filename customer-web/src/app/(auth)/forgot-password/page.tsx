@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from '../auth.module.css';
 
 interface OtpRequestResponse {
@@ -21,6 +22,8 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState('PK');
+  const [phonePrefix, setPhonePrefix] = useState('+92');
   const [isLoading, setIsLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
 
@@ -62,11 +65,11 @@ export default function ForgotPasswordPage() {
         cleanPhone = cleanPhone.replace(/^0/, '');
       }
 
-      const fullPhoneNumber = `+92${cleanPhone}`;
+      const fullPhoneNumber = `${phonePrefix}${cleanPhone}`;
 
-      const response = await api.post<OtpRequestResponse>('/api/v1/auth/otp/request', {
+      const response = await api.post<OtpRequestResponse>(ENDPOINTS.AUTH_OTP_REQUEST, {
         phone: fullPhoneNumber,
-        phone_country: 'PK',
+        phone_country: phoneCountry,
         is_resend: '0',
         otp_type: 'reset-password',
       });
@@ -77,7 +80,7 @@ export default function ForgotPasswordPage() {
       router.push(
         `/verify-otp?phone=${encodeURIComponent(
           fullPhoneNumber
-        )}&country=PK&flow=reset`
+        )}&country=${phoneCountry}&flow=reset`
       );
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Failed to send verification code. Please try again.';
@@ -157,7 +160,7 @@ export default function ForgotPasswordPage() {
                   }`}
                 >
                   <i className="bx bx-phone lead"></i>
-                  <span className={styles.fldCc}>+92</span>
+                  <span className={styles.fldCc}>{phonePrefix}</span>
                   <input
                     type="tel"
                     placeholder="3XX XXXXXXX"

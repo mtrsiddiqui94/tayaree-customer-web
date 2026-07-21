@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from './page.module.css';
 
 interface Service {
@@ -101,6 +102,119 @@ export default function HomePage() {
     return formatted;
   };
 
+  const CategoryScrollRow = ({ services, catIdx }: any) => {
+    const rowRef = React.useRef<HTMLDivElement>(null);
+    const [atStart, setAtStart] = React.useState(true);
+    const [atEnd, setAtEnd] = React.useState(false);
+  
+    const sync = () => {
+      if (!rowRef.current) return;
+      setAtStart(rowRef.current.scrollLeft < 8);
+      setAtEnd(rowRef.current.scrollLeft + rowRef.current.clientWidth >= rowRef.current.scrollWidth - 8);
+    };
+  
+    React.useEffect(() => {
+      sync();
+    }, [services]);
+  
+    const scrollBy = (dir: number) => {
+      if (rowRef.current) {
+        rowRef.current.scrollBy({ left: dir * 250 * 3, behavior: 'smooth' });
+      }
+    };
+  
+    return (
+      <div className={styles.scrollWrap}>
+        <button 
+          className={`${styles.scrollArrow} ${styles.scrollArrowLeft} ${atStart ? styles.atEdge : ''}`}
+          onClick={() => scrollBy(-1)}
+        >
+          <i className="bx bx-chevron-left"></i>
+        </button>
+        
+        <div className={styles.scrollRow} ref={rowRef} onScroll={sync}>
+          {services.map((service: any, svcIdx: number) => {
+            const discount = Number(service.discount_percentage || service.price_discount || 0);
+            const isVerified = service.is_verified || service.verified;
+            const displayLocation = service.location || service.vendor_location || service.area;
+            const displayPrice = formatPrice(service.price_label || service.package_discounted_price || service.discounted_price || service.price || 'unset');
+            const displayName = service.name || service.info1_label || 'unset';
+            const displaySubtitle = service.item_name || service.info2_label || 'unset';
+            const isLiked = service.customer_liked === 1 || service.customerLiked === 1;
+  
+            return (
+              <Link
+                href={`/${service.endpoint}/${service.slug}`}
+                key={svcIdx}
+                className={styles.serviceCard}
+              >
+                <div className={styles.scImgWrap}>
+                  <img
+                    src={service.image_url}
+                    alt={displayName}
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=400&q=80';
+                    }}
+                  />
+                  {discount > 0 && (
+                    <span className={styles.scBadge}>
+                      {discount.toFixed(0)}% OFF
+                    </span>
+                  )}
+                  <span
+                    onClick={(e) => handleLikeClick(e, catIdx, svcIdx)}
+                    className={`${styles.scHeart} ${isLiked ? styles.scHeartLiked : ''}`}
+                  >
+                    <i className={isLiked ? "bx bxs-heart" : "bx bx-heart"}></i>
+                  </span>
+                  {isVerified && (
+                    <span className={styles.scVerified}>
+                      <i className="bx bxs-badge-check"></i>Verified
+                    </span>
+                  )}
+                </div>
+                <div className={styles.scBody}>
+                  <div className={styles.scName}>{displayName}</div>
+                  <span className={styles.scVendor}>
+                    {displaySubtitle}
+                    {displayLocation ? ` · ${displayLocation}` : ''}
+                  </span>
+                  <div className={styles.scPriceRow}>
+                    <div className={styles.scPrice}>
+                      {displayPrice}
+                    </div>
+                    {discount > 0 && service.original_price && (
+                      <div className={styles.scOld}>
+                        <s>{formatPrice(service.original_price)}</s>
+                      </div>
+                    )}
+                  </div>
+                  {service.rating !== undefined && service.rating !== null && (
+                    <div className={styles.scStars}>
+                      <i className="bx bxs-star"></i>
+                      <span>{Number(service.rating).toFixed(1)}</span>
+                      <span className={styles.count}>
+                        ({service.reviews_count || 0})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        
+        <button 
+          className={`${styles.scrollArrow} ${styles.scrollArrowRight} ${atEnd ? styles.atEdge : ''}`}
+          onClick={() => scrollBy(1)}
+        >
+          <i className="bx bx-chevron-right"></i>
+        </button>
+      </div>
+    );
+  };
+
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const timer = setTimeout(() => {
@@ -113,7 +227,7 @@ export default function HomePage() {
 
         // Fetch home categories and services
         const homeResponse = await api.get<{ status: boolean; data: Category[] }>(
-          '/api/v1/home'
+          ENDPOINTS.HOME
         );
         if (homeResponse.status && homeResponse.data) {
           setCategories(homeResponse.data);
@@ -121,7 +235,7 @@ export default function HomePage() {
 
         // Fetch promotions/banners
         const promoResponse = await api.get<{ status: boolean; data: PromoBanner[] }>(
-          '/api/v1/home/promotions'
+          `${ENDPOINTS.HOME}/promotions`
         ).catch(() => ({ status: false, data: [] })); // fail-safe if endpoint fails
         
         if (promoResponse.status && promoResponse.data) {
@@ -321,78 +435,7 @@ export default function HomePage() {
                       </Link>
                     </div>
 
-                    <div className={styles.scrollRow}>
-                      {services.map((service, svcIdx) => {
-                        const discount = Number(service.discount_percentage || service.price_discount || 0);
-                        const isVerified = service.is_verified || service.verified;
-                        const displayLocation = service.location || service.vendor_location || service.area;
-                        const displayPrice = formatPrice(service.price_label || service.package_discounted_price || service.discounted_price || service.price || 'unset');
-                        const displayName = service.name || service.info1_label || 'unset';
-                        const displaySubtitle = service.item_name || service.info2_label || 'unset';
-                        const isLiked = service.customer_liked === 1 || service.customerLiked === 1;
-
-                        return (
-                          <Link
-                            href={`/${service.endpoint}/${service.slug}`}
-                            key={svcIdx}
-                            className={styles.serviceCard}
-                          >
-                            <div className={styles.scImgWrap}>
-                              <img
-                                src={service.image_url}
-                                alt={displayName}
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=400&q=80';
-                                }}
-                              />
-                              {discount > 0 && (
-                                <span className={styles.scBadge}>
-                                  {discount.toFixed(0)}% OFF
-                                </span>
-                              )}
-                              <span
-                                onClick={(e) => handleLikeClick(e, catIdx, svcIdx)}
-                                className={`${styles.scHeart} ${isLiked ? styles.scHeartLiked : ''}`}
-                              >
-                                <i className={isLiked ? "bx bxs-heart" : "bx bx-heart"}></i>
-                              </span>
-                              {isVerified && (
-                                <span className={styles.scVerified}>
-                                  <i className="bx bxs-badge-check"></i>Verified
-                                </span>
-                              )}
-                            </div>
-                            <div className={styles.scBody}>
-                              <div className={styles.scName}>{displayName}</div>
-                              <span className={styles.scVendor}>
-                                {displaySubtitle}
-                                {displayLocation ? ` · ${displayLocation}` : ''}
-                              </span>
-                              <div className={styles.scPriceRow}>
-                                <div className={styles.scPrice}>
-                                  {displayPrice}
-                                </div>
-                                {discount > 0 && service.original_price && (
-                                  <div className={styles.scOld}>
-                                    <s>{formatPrice(service.original_price)}</s>
-                                  </div>
-                                )}
-                              </div>
-                              {service.rating !== undefined && service.rating !== null && (
-                                <div className={styles.scStars}>
-                                  <i className="bx bxs-star"></i>
-                                  <span>{Number(service.rating).toFixed(1)}</span>
-                                  <span className={styles.count}>
-                                    ({service.reviews_count || 0})
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                    <CategoryScrollRow services={services} catIdx={catIdx} />
                   </div>
                 );
               })

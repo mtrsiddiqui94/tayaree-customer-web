@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
-import styles from '../events/planners.module.css';
+import styles from './referrals.module.css';
 
 export default function ReferralsPage() {
   const router = useRouter();
@@ -71,9 +70,6 @@ export default function ReferralsPage() {
 
   return (
     <>
-      <Header />
-
-      {/* Toast Alert */}
       {toast && (
         <div style={{
           position: 'fixed',
@@ -97,93 +93,75 @@ export default function ReferralsPage() {
         </div>
       )}
 
-      <main className={styles.page}>
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>Refer Friends</span>
-        </div>
+      <DashboardLayout breadcrumbTitle="Invite Friends">
+        <div className={styles.dashContent}>
 
         <div className={styles.pageHead}>
-          <h1 className={styles.pageTitle}>Invite Friends &amp; Family</h1>
-          <p className={styles.pageSub}>Share your custom invitation code to earn discount coupons.</p>
+          <h1 className={styles.pageTitle}>Invite Friends</h1>
+          <p className={styles.pageSub}>Share Tayaree and earn rewards when your friends place their first order.</p>
         </div>
 
-        <div className={styles.grid} style={{ gridTemplateColumns: '1fr 1fr' }}>
-          {/* Link Share card */}
-          <div className={styles.card}>
-            <div className={styles.cardInner}>
-              <h3 className={styles.cardTitle}>
-                <i className="bx bx-share-alt"></i> Share Referral Link
-              </h3>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Your friends get Rs. 2,000 off on their first booking, and you receive Rs. 1,000 coupons on successful bookings.
-              </p>
-              
-              <div className={styles.formGroup} style={{ marginTop: '14px' }}>
-                <label>Your Referral Code</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="text"
-                    value={referralCode}
-                    readOnly
-                    className={styles.inputField}
-                    style={{ flex: 1, fontWeight: 700, textAlign: 'center', letterSpacing: '1px' }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Referral Link</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="text"
-                    value={referralUrl}
-                    readOnly
-                    className={styles.inputField}
-                    style={{ flex: 1 }}
-                  />
-                  <button onClick={handleCopyLink} className={`${styles.btn} ${styles.btnPrimary}`}>
-                    Copy
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div className={styles.inviteHero}>
+          <i className="bx bxs-gift" style={{ fontSize: '36px', position: 'relative', zIndex: 1 }}></i>
+          <div className={styles.inviteHeroTitle}>Give PKR 500, Get PKR 500</div>
+          <div className={styles.inviteHeroSub}>
+            Invite a friend with your code. They get PKR 500 off their first order, and you earn PKR 500 in credit once they check out.
           </div>
+          <div className={styles.refBox}>
+            <span className={styles.refCode}>{referralCode}</span>
+            <button className={styles.refCopy} onClick={handleCopyLink}>
+              <i className="bx bx-copy"></i>Copy
+            </button>
+          </div>
+          <div className={styles.shareRow}>
+            <button className={styles.shareBtn} onClick={handleCopyLink}>
+              <i className="bx bxl-whatsapp"></i>WhatsApp
+            </button>
+            <button className={styles.shareBtn} onClick={handleCopyLink}>
+              <i className="bx bx-envelope"></i>Email
+            </button>
+            <button className={styles.shareBtn} onClick={handleCopyLink}>
+              <i className="bx bx-link"></i>Copy Link
+            </button>
+          </div>
+        </div>
 
-          {/* SMS Inviter Card */}
-          <div className={styles.card}>
-            <div className={styles.cardInner}>
-              <h3 className={styles.cardTitle}>
-                <i className="bx bx-paper-plane"></i> Send Direct Invite
-              </h3>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Send invitation link directly to friend's phone number.
-              </p>
-
-              <form onSubmit={handleInviteSubmit} style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div className={styles.formGroup}>
-                  <label>Friend Phone Number*</label>
-                  <input
-                    type="tel"
-                    placeholder="03xx-xxxxxxx"
-                    value={invitePhone}
-                    onChange={(e) => setInvitePhone(e.target.value)}
-                    className={styles.inputField}
-                    required
-                  />
-                </div>
-
-                <button type="submit" disabled={isSaving} className={`${styles.btn} ${styles.btnPrimary}`} style={{ width: '100%' }}>
-                  {isSaving ? 'Sending...' : 'Send Invite'}
-                </button>
-              </form>
+        <div className={styles.card}>
+          <div className={styles.cardInner}>
+            <div className={styles.cardTitle}>
+              <i className="bx bx-group"></i>Your Invites
+            </div>
+            
+            <div className={styles.invRow}>
+              <div className={styles.invAv}>SK</div>
+              <div className={styles.invInfo}>
+                <div className={styles.invName}>Sara Khan</div>
+                <div className={styles.invSub}>Joined · earned PKR 500</div>
+              </div>
+              <span className={`${styles.invStatus} ${styles.joined}`}>Joined</span>
+            </div>
+            
+            <div className={styles.invRow}>
+              <div className={styles.invAv}>BA</div>
+              <div className={styles.invInfo}>
+                <div className={styles.invName}>Bilal Ahmed</div>
+                <div className={styles.invSub}>Joined · earned PKR 500</div>
+              </div>
+              <span className={`${styles.invStatus} ${styles.joined}`}>Joined</span>
+            </div>
+            
+            <div className={styles.invRow}>
+              <div className={styles.invAv}>MR</div>
+              <div className={styles.invInfo}>
+                <div className={styles.invName}>Maria Riaz</div>
+                <div className={styles.invSub}>Invited 2 days ago · not ordered yet</div>
+              </div>
+              <span className={`${styles.invStatus} ${styles.pending}`}>Pending</span>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
+        </div>
+      </DashboardLayout>
     </>
   );
 }

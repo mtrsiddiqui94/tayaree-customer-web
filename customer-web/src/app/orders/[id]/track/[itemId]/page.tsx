@@ -40,6 +40,7 @@ export default function ItemTrackingPage({ params }: { params: Promise<{ id: str
 
   const [details, setDetails] = useState<TrackingDetails | null>(null);
   const [statuses, setStatuses] = useState<TrackingStatus[]>([]);
+  const [paymentTerms, setPaymentTerms] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -113,6 +114,12 @@ export default function ItemTrackingPage({ params }: { params: Promise<{ id: str
         })));
       } else {
         setStatuses(parsedStatuses);
+      }
+
+      // 3. Fetch payment terms
+      const ptRes = await api.get<{ status: boolean; data: any }>(`/api/v1/order/items/${itemId}/payment-term`).catch(() => ({ status: false, data: null }));
+      if (ptRes.status && ptRes.data) {
+        setPaymentTerms(ptRes.data);
       }
 
     } catch (e) {
@@ -288,6 +295,19 @@ export default function ItemTrackingPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
           </div>
+
+          {paymentTerms && (
+            <div className={styles.card} style={{marginTop: '18px'}}>
+              <div className={styles.cardInner}>
+                <h3 className={styles.cardTitle}>
+                  <i className="bx bx-credit-card"></i> Payment Terms
+                </h3>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                   {paymentTerms.text || paymentTerms.description || JSON.stringify(paymentTerms)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

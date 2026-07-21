@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
+import { ENDPOINTS } from '@/lib/constants';
 import styles from './checkout.module.css';
 
 interface CartItem {
@@ -127,7 +128,7 @@ export default function CheckoutPage() {
 
   const handleShippingSelectionChange = async (selectedIds: number[]) => {
     try {
-      let url = '/api/v1/cart/items/shipment/list?is_init=0';
+      let url = `${ENDPOINTS.CART_SHIPMENT_LIST}?is_init=0`;
       selectedIds.forEach((id) => {
         url += `&cart_package_ids[]=${id}`;
       });
@@ -154,7 +155,7 @@ export default function CheckoutPage() {
 
   const handleTaxesSelectionChange = async (selectedIds: number[]) => {
     try {
-      let url = '/api/v1/cart/taxes/details?is_init=0';
+      let url = `${ENDPOINTS.CART_TAXES_DETAILS}?is_init=0`;
       selectedIds.forEach((id) => {
         url += `&cart_package_ids[]=${id}`;
       });
@@ -213,7 +214,7 @@ export default function CheckoutPage() {
   const loadCheckoutData = useCallback(async () => {
     try {
       // 1. Get flat checkout items list from cart
-      const cartListRes = await api.get<{ status: boolean; data: any[] }>('/api/v1/cart/items/list')
+      const cartListRes = await api.get<{ status: boolean; data: any[] }>(ENDPOINTS.CART_ITEMS_LIST)
         .catch(() => ({ status: false, data: [] }));
       const flatItems = (cartListRes.data || []).map((itm, idx) => ({
         cart_item_id: itm.cart_item_id || idx + 1,
@@ -266,7 +267,7 @@ export default function CheckoutPage() {
       }
 
       // 3. Get Cart Summary
-      const summaryRes = await api.get<any>('/api/v1/cart/summary').catch(() => null);
+      const summaryRes = await api.get<any>(ENDPOINTS.CART_SUMMARY).catch(() => null);
       if (summaryRes) {
         const rawSummary = summaryRes.data || summaryRes;
         setSummary({
@@ -291,7 +292,7 @@ export default function CheckoutPage() {
       }
 
       // Get shipping charges details
-      const shipListRes = await api.get<{ status: boolean; data: any }>('/api/v1/cart/items/shipment/list?is_init=1').catch(() => null);
+      const shipListRes = await api.get<{ status: boolean; data: any }>(`${ENDPOINTS.CART_SHIPMENT_LIST}?is_init=1`).catch(() => null);
       if (shipListRes && shipListRes.data) {
         const raw = shipListRes.data;
         const pkgs = (raw.packages || []).map((p: any) => ({
@@ -313,7 +314,7 @@ export default function CheckoutPage() {
       }
 
       // Get taxes details
-      const taxListRes = await api.get<{ status: boolean; data: any }>('/api/v1/cart/taxes/details?is_init=1').catch(() => null);
+      const taxListRes = await api.get<{ status: boolean; data: any }>(`${ENDPOINTS.CART_TAXES_DETAILS}?is_init=1`).catch(() => null);
       if (taxListRes && taxListRes.data) {
         const raw = taxListRes.data;
         const pkgs = (raw.packages || []).map((p: any) => ({
@@ -403,7 +404,7 @@ export default function CheckoutPage() {
         country: newAddressCountry,
       };
 
-      const res = await api.post<{ status: boolean; message: string }>('/api/v1/address/store', payload);
+      const res = await api.post<{ status: boolean; message: string }>(ENDPOINTS.ADDRESS_STORE, payload);
       if (res.status) {
         showToast(res.message || 'Address saved successfully.');
         setShowAddressForm(false);
@@ -457,7 +458,7 @@ export default function CheckoutPage() {
       const cardId = selectedPaymentMethod === 'card' ? (selectedCardId ? selectedCardId.toString() : '0') : '0';
 
       const payload: any = {
-        payment_method_id: (summary.shippingMethodId || 1).toString(), // The flutter app maps shippingMethodId to payment_method_id for the API
+        payment_method_id: paymentMethodId,
         card_id: cardId,
         address_id: selectedAddressId.toString(),
         cart_id: summary.cartId.toString(),
@@ -469,7 +470,7 @@ export default function CheckoutPage() {
         payload.delivery_instructions = deliveryInstructions.trim();
       }
 
-      const res = await api.post<{ status: boolean; data: any; message?: string }>('/api/v1/checkout', payload);
+      const res = await api.post<{ status: boolean; data: any; message?: string }>(ENDPOINTS.CHECKOUT, payload);
       
       if (res.status && res.data) {
         // Save success properties returned by DTO
@@ -480,7 +481,7 @@ export default function CheckoutPage() {
           paymentId: res.data.payment_id,
         }));
         
-        router.push('/checkout/confirmed');
+        router.push('/order-confirmed');
       } else {
         showToast(res.message || 'Order processing failed.', 'error');
       }
@@ -897,6 +898,16 @@ export default function CheckoutPage() {
                   placeholder="E.g., Event starting times, delivery instructions, color details, etc."
                   value={deliveryInstructions}
                   onChange={(e) => setDeliveryInstructions(e.target.value)}
+                  onBlur={async () => {
+                    if (!deliveryInstructions.trim()) return;
+                    try {
+                      await api.post(ENDPOINTS.CART_DELIVERY_INSTRUCTIONS, {
+                        delivery_instructions: deliveryInstructions.trim()
+                      });
+                    } catch (err) {
+                      console.error('Failed to update delivery instructions', err);
+                    }
+                  }}
                   className={styles.textareaField}
                 />
                 

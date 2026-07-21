@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 // Mock images utility
@@ -245,7 +246,8 @@ export default function DeliveriesPage() {
   const deliveredCount = deliveries.filter(d => d.status === 'delivered').length;
 
   return (
-    <>
+    <DashboardLayout breadcrumbTitle="My Deliveries">
+      <>
       {toast && (
         <div style={{
           position: 'fixed',
@@ -660,5 +662,6 @@ export default function DeliveriesPage() {
         )}
       </div>
     </>
+  </DashboardLayout>
   );
 }

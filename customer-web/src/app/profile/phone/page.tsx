@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 export default function PhoneSettingsPage() {
@@ -165,7 +166,8 @@ export default function PhoneSettingsPage() {
   };
 
   return (
-    <>
+    <DashboardLayout breadcrumbTitle="Phone & Email">
+      <>
       {toast && (
         <div style={{
           position: 'fixed',
@@ -314,5 +316,6 @@ export default function PhoneSettingsPage() {
         </div>
       )}
     </>
+  </DashboardLayout>
   );
 }
