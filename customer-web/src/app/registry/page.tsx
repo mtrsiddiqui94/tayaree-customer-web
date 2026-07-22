@@ -49,7 +49,10 @@ export default function RegistryPage() {
       const myRes = await api.get<{ status: boolean; data?: any }>('/api/v1/gift-registry/list/my').catch(() => null);
       const friendRes = await api.get<{ status: boolean; data?: any }>('/api/v1/gift-registry/list/friends').catch(() => null);
 
-      const parsedMy: Registry[] = (myRes?.data?.registries || []).map((r: any) => ({
+      const myData = myRes?.data || {};
+      const friendData = friendRes?.data || {};
+
+      const mapRegistry = (r: any, b: string): Registry => ({
         id: r.id,
         title: r.title || 'unset',
         creatorName: r.creator_name || 'My Registry',
@@ -58,24 +61,20 @@ export default function RegistryPage() {
         totalValue: r.total_value || 0,
         createdDate: r.created_date || 'unset',
         status: r.status || 'active',
-        bucket: r.bucket || 'current',
+        bucket: b,
         occasion: r.occasion || 'Event',
         coverUrl: r.cover_url
-      }));
+      });
 
-      const parsedFriend: Registry[] = (friendRes?.data?.registries || []).map((r: any) => ({
-        id: r.id,
-        title: r.title || 'unset',
-        creatorName: r.creator_name || 'Friend Registry',
-        giftsCount: r.gifts_count || 0,
-        purchasedCount: r.purchased_count || 0,
-        totalValue: r.total_value || 0,
-        createdDate: r.created_date || 'unset',
-        status: r.status || 'active',
-        bucket: r.bucket || 'current',
-        occasion: r.occasion || 'Event',
-        coverUrl: r.cover_url
-      }));
+      const parsedMy = [
+        ...(myData.current_registry || []).map((r: any) => mapRegistry(r, 'current')),
+        ...(myData.past_registry || []).map((r: any) => mapRegistry(r, 'past'))
+      ];
+
+      const parsedFriend = [
+        ...(friendData.current_registry || []).map((r: any) => ({ ...mapRegistry(r, 'current'), creatorName: r.creator_name || 'Friend Registry' })),
+        ...(friendData.past_registry || []).map((r: any) => ({ ...mapRegistry(r, 'past'), creatorName: r.creator_name || 'Friend Registry' }))
+      ];
 
       setMyRegistries(parsedMy);
       setFriendRegistries(parsedFriend);
@@ -164,8 +163,8 @@ export default function RegistryPage() {
             </div>
 
             <div className={styles.qtabs}>
-              <button className={`${styles.qtab} ${activeTab === 'my' ? styles.active : ''}`} onClick={() => setActiveTab('my')}>My Registries</button>
-              <button className={`${styles.qtab} ${activeTab === 'friends' ? styles.active : ''}`} onClick={() => setActiveTab('friends')}>Friends Registries</button>
+              <button className={`${styles.qtab} ${activeTab === 'my' ? styles.qtabActive : ''}`} onClick={() => setActiveTab('my')}>My Registries</button>
+              <button className={`${styles.qtab} ${activeTab === 'friends' ? styles.qtabActive : ''}`} onClick={() => setActiveTab('friends')}>Friends Registries</button>
             </div>
 
             {activeTab === 'my' && (
@@ -174,9 +173,9 @@ export default function RegistryPage() {
                   <i className='bx bx-search'></i>
                   <input type="text" placeholder="Search your registries..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
                 </div>
-                <button className={`${styles.fchip} ${filter === 'all' ? styles.active : ''}`} onClick={() => setFilter('all')}>All</button>
-                <button className={`${styles.fchip} ${filter === 'active' ? styles.active : ''}`} onClick={() => setFilter('active')}>Active</button>
-                <button className={`${styles.fchip} ${filter === 'closed' ? styles.active : ''}`} onClick={() => setFilter('closed')}>Closed</button>
+                <button className={`${styles.fchip} ${filter === 'all' ? styles.fchipActive : ''}`} onClick={() => setFilter('all')}>All</button>
+                <button className={`${styles.fchip} ${filter === 'active' ? styles.fchipActive : ''}`} onClick={() => setFilter('active')}>Active</button>
+                <button className={`${styles.fchip} ${filter === 'closed' ? styles.fchipActive : ''}`} onClick={() => setFilter('closed')}>Closed</button>
               </div>
             )}
 

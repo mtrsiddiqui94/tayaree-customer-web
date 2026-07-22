@@ -72,7 +72,7 @@ export default function CreateRegistryPage() {
 
         // 2. Load events list to link registry
         interface EventItem { id?: number; title?: string; event_date?: string; }
-        const eventsRes = await api.get<{ status: boolean; data: EventItem[] }>('/api/v1/events').catch(() => null);
+        const eventsRes = await api.get<{ status: boolean; data: EventItem[] }>('/api/v1/gift-registry/events/list').catch(() => null);
         if (eventsRes?.status && eventsRes.data && eventsRes.data.length > 0) {
           const mappedEvents = eventsRes.data.map((e, idx) => ({
             id: e.id || idx + 1,
@@ -84,15 +84,6 @@ export default function CreateRegistryPage() {
           // Auto-select first event
           setSelectedEventId(mappedEvents[0].id);
           setEventDate(mappedEvents[0].event_date);
-        } else {
-          // Fallback mock events
-          const mockEvents: UserEvent[] = [
-            { id: 2847, title: "Adnan & Mariam's Wedding", event_date: "March 15, 2025" },
-            { id: 2848, title: "Mariam's Mehndi Night", event_date: "March 13, 2025" }
-          ];
-          setEvents(mockEvents);
-          setSelectedEventId(mockEvents[0].id);
-          setEventDate(mockEvents[0].event_date);
         }
 
         // Initialize guest contacts
@@ -162,16 +153,16 @@ export default function CreateRegistryPage() {
 
     try {
       setIsSaving(true);
-      const payload = {
-        title: registryName.trim(),
-        event_id: selectedEventId ? selectedEventId.toString() : '',
-        event_date: eventDate,
-        guests: addedGuests.map(g => ({ name: g.name, phone: g.phone })),
-        is_default: '0',
-        is_active: '1'
-      };
+      const formData = new FormData();
+      formData.append('registry_name', registryName.trim());
+      formData.append('event_id', selectedEventId ? selectedEventId.toString() : '');
+      // guests would ideally be sent as JSON string or individual array fields depending on backend
+      formData.append('guests', JSON.stringify(addedGuests.map(g => ({ name: g.name, phone: g.phone }))));
+      formData.append('is_default', '0');
+      formData.append('is_active', '1');
+      // If photo was supported: formData.append('gift_registry_group_icon', photoFile);
 
-      const res = await api.post<{ status: boolean; message?: string }>('/api/v1/gift-registry/store', payload)
+      const res = await api.post<{ status: boolean; message?: string }>('/api/v1/gift-registry/store', formData)
         .catch(() => ({ status: true, message: 'Mock success' }));
 
       if (res.status) {

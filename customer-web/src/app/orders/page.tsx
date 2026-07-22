@@ -121,7 +121,19 @@ export default function OrdersPage() {
               quantity: ord.quantity || 1,
               image_url: itm.image_url || '',
               status: itm.item_status || 'Booked',
-              variantName: itm.variant_name || 'Standard'
+              variantName: itm.variant_name || (() => {
+                // Priority: Use explicit variant keys if provided
+                const explicitVariants = [itm.color, itm.size, itm.duration, itm.timeslot, itm.days]
+                  .filter(v => v && typeof v === 'string' && v.toLowerCase() !== 'unset' && v.trim() !== '');
+                
+                if (explicitVariants.length > 0) return explicitVariants.join(' - ');
+
+                // Fallback: Parse from info labels
+                const infos = [itm.info1_label, itm.info2_label, itm.info3_label, itm.info4_label, itm.info1Label, itm.info2Label, itm.info3Label, itm.info4Label]
+                  .filter(v => v && typeof v === 'string' && v.toLowerCase() !== 'unset' && v.trim() !== '');
+                const variants = infos.filter(v => !v.toLowerCase().includes('delivery') && !v.toLowerCase().includes('date'));
+                return variants.length > 0 ? variants.join(' - ') : 'Standard';
+              })()
             }));
 
             parsedOrders.push({

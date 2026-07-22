@@ -1,0 +1,536 @@
+.pageHead {
+  margin-bottom: 20px;
+}
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.pageSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 5px;
+}
+
+/* horizontal stepper */
+.stepbar {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 22px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stepbar::-webkit-scrollbar {
+  display: none;
+}
+.sbItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sbDot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  transition: .15s;
+}
+.sbItemActive .sbDot {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+.sbItemDone .sbDot {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.sbText {
+  min-width: 0;
+}
+.sbName {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+.sbItemActive .sbName, .sbItemDone .sbName {
+  color: var(--text-primary);
+}
+.sbSub {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.sbConn {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin: 0 16px;
+  min-width: 24px;
+  border-radius: 2px;
+}
+.sbConnDone {
+  background: var(--success);
+}
+
+.wizCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-sm);
+  padding: 28px 30px;
+}
+.wizQ {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.wizHint {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.wizLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 24px 0 10px;
+}
+.wizInput {
+  width: 100%;
+  padding: 13px 15px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--text-primary);
+  outline: none;
+}
+.wizInput:focus {
+  border-color: var(--primary);
+}
+.wizDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 30px 0 4px;
+}
+.wizSubhead {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-top: 22px;
+}
+.wizSubhint {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.secMini {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 20px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.secMini i {
+  color: var(--primary);
+  font-size: 15px;
+}
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.stepPane {
+  display: none;
+}
+.stepPaneActive {
+  display: block;
+  animation: fade .25s ease;
+}
+@keyframes fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* type grid */
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.typeTile {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: .15s;
+}
+.typeTile:hover {
+  border-color: var(--text-muted);
+}
+.typeTileSelected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.typeIcon {
+  font-size: 26px;
+  line-height: 1;
+}
+.typeName {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.typeTileSelected .typeName {
+  color: var(--primary);
+}
+
+/* date */
+.segCtrl {
+  display: inline-flex;
+  background: var(--input-bg);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.segTab {
+  padding: 9px 22px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: .15s;
+}
+.segTabActive {
+  background: var(--card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.chipsRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.pchip {
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: .15s;
+}
+.pchipSelected, .pchip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* Toast Notification */
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius-m, 12px);
+  background: var(--card, #ffffff);
+  color: var(--text-primary, #111111);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid var(--border, #e4e4e4);
+  animation: slideUp 0.3s ease;
+}
+
+.toastError {
+  border-left: 4px solid var(--primary, #d71921);
+}
+
+.toastError i {
+  color: var(--primary, #d71921);
+  font-size: 18px;
+}
+
+.toastSuccess {
+  border-left: 4px solid #1a7a36;
+}
+
+.toastSuccess i {
+  color: #1a7a36;
+  font-size: 18px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* guests + budget */
+.inputRow {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 14px 16px;
+  max-width: 100%;
+}
+.inputRow:focus-within {
+  border-color: var(--primary);
+}
+.inputRowMain {
+  flex: 1;
+}
+.inputRowLbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.inputRow input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: transparent;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stepper button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--input-bg);
+  border: none;
+  font-size: 20px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stepper button:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.budgetCard {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: .15s;
+}
+.budgetCardActive {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.budgetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.budgetTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+.budgetRadio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.budgetCardActive .budgetRadio {
+  border-color: var(--primary);
+}
+.budgetCardActive .budgetRadio::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.budgetIn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1.5px solid var(--border);
+  padding: 6px 0;
+  margin-bottom: 8px;
+}
+.budgetIn span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.budgetIn input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: transparent;
+}
+.budgetHint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.wizBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 300;
+  background: rgba(255,255,255,0.97);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+}
+.wizBarInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 13px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.wizBarStep {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+.wizBarStep b {
+  color: var(--text-primary);
+}
+.wizBarActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.btnBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 12px 22px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .15s;
+}
+.btnBack:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+.btnBack:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.btnNext {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 13px 26px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: .15s;
+}
+.btnNext:hover {
+  background: var(--primary-dark);
+}
+.btnNext i {
+  font-size: 18px;
+}
+
+@media(max-width:820px){
+  .twoCol { grid-template-columns: 1fr; }
+  .typeGrid { grid-template-columns: repeat(2, 1fr); }
+}

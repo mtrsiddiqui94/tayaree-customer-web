@@ -16,20 +16,7 @@ const PKG_OPTIONS = [
   { key: "couture", name: "Bride & Groom Couture", img: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=80&h=80&q=80" }
 ];
 
-const UPCOMING = [
-  { pkg: "catering", name: "Royal Biryani Catering", sub: "Final Balance · 70% · Installment 2 of 2", amount: 80325, due: "Due Mar 13, 2025", dueThisWeek: true },
-  { pkg: "photography", name: "Premium Photography", sub: "Final Balance · 70% · Installment 2 of 2", amount: 59500, due: "Due Mar 13, 2025", dueThisWeek: true },
-  { pkg: "couture", name: "Bride & Groom Couture", sub: "Final Balance · 70% · Installment 2 of 2", amount: 56000, due: "Due Mar 13, 2025", dueThisWeek: true }
-];
-
-const HISTORY = [
-  { pkg: "catering", name: "Royal Biryani Catering", sub: "Booking Deposit · 30%", amount: 34425, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "inst" },
-  { pkg: "photography", name: "Premium Photography", sub: "Booking Deposit · 30%", amount: 25500, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "inst" },
-  { pkg: "couture", name: "Bride & Groom Couture", sub: "Booking Deposit · 30%", amount: 24000, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "inst" },
-  { pkg: "florals", name: "Floral Decoration", sub: "Full Payment · 100%", amount: 45000, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "checkout" },
-  { pkg: "sound", name: "Sound & Lighting", sub: "Full Payment · 100%", amount: 60000, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "checkout" },
-  { pkg: "order", name: "Shipping & Taxes", sub: "Order charges · at checkout", amount: 40375, date: "10 Mar 2025", method: "Visa •••• 6411", kind: "checkout" }
-];
+import { api } from '@/lib/api';
 
 export default function AllPaymentsPage() {
   const router = useRouter();
@@ -42,7 +29,14 @@ export default function AllPaymentsPage() {
   const [selectedPkg, setSelectedPkg] = useState(PKG_OPTIONS[0]);
   const [pkgSearchQuery, setPkgSearchQuery] = useState('');
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Dynamic API states
+  const [upcomingItems, setUpcomingItems] = useState<any[]>([]);
+  const [upcomingSummary, setUpcomingSummary] = useState<any>(null);
+  
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [refundHero, setRefundHero] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -50,6 +44,32 @@ export default function AllPaymentsPage() {
       setTimeout(() => router.push('/login?redirect=/payments'), 0);
       return;
     }
+
+    async function fetchPayments() {
+      setIsLoading(true);
+      try {
+        const [upcomingRes, historyRes] = await Promise.all([
+          api.get<{ status: boolean; data: any }>('/api/v1/profile/payment/upcoming?page=1&limit=50'),
+          api.get<{ status: boolean; data: any }>('/api/v1/profile/payment/list?page=1&limit=50')
+        ]);
+
+        if (upcomingRes.status !== false && upcomingRes.data) {
+          setUpcomingItems(upcomingRes.data.data || []);
+          setUpcomingSummary(upcomingRes.data.summary || null);
+        }
+        
+        if (historyRes.status !== false && historyRes.data) {
+          setHistoryItems(historyRes.data.data || []);
+          setRefundHero(historyRes.data.refund_hero || null);
+        }
+      } catch (err) {
+        console.error('Error fetching payments:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPayments();
   }, [router]);
 
   const formatAmount = (num: number) => {
@@ -60,59 +80,71 @@ export default function AllPaymentsPage() {
     pkg.name.toLowerCase().includes(pkgSearchQuery.toLowerCase())
   );
 
-  const filteredUpcoming = UPCOMING.filter(item => {
-    const matchesPkg = selectedPkg.key === 'all' || item.pkg === selectedPkg.key;
-    const matchesSearch = searchQuery.trim() === '' || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPkg && matchesSearch;
+  const filteredUpcoming = upcomingItems.filter(item => {
+    const pkgName = (item.package_name || '').toLowerCase();
+    const searchLow = searchQuery.toLowerCase();
+    
+    // In real app, we'd match on item.package_id if package selector was dynamic.
+    const matchesSearch = searchQuery.trim() === '' || pkgName.includes(searchLow) || (item.description || '').toLowerCase().includes(searchLow);
+    return matchesSearch;
   });
 
-  const filteredHistory = HISTORY.filter(item => {
-    const matchesPkg = selectedPkg.key === 'all' || item.pkg === selectedPkg.key;
-    const matchesSearch = searchQuery.trim() === '' || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPkg && matchesSearch;
+  const filteredHistory = historyItems.filter(item => {
+    const pkgName = (item.package_name || '').toLowerCase();
+    const searchLow = searchQuery.toLowerCase();
+    const matchesSearch = searchQuery.trim() === '' || pkgName.includes(searchLow) || (item.description || '').toLowerCase().includes(searchLow);
+    return matchesSearch;
   });
 
-  const totalUpcomingAmount = filteredUpcoming.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalPaidAmount = filteredHistory.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalUpcomingAmount = upcomingSummary?.due_this_week_total !== undefined 
+    ? (upcomingSummary.due_this_week_total + (upcomingSummary.later_total || 0))
+    : filteredUpcoming.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    
+  const totalPaidAmount = historyItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-  const upcomingDueThisWeek = filteredUpcoming.filter(u => u.dueThisWeek);
-  const upcomingLater = filteredUpcoming.filter(u => !u.dueThisWeek);
-  const weekTotal = upcomingDueThisWeek.reduce((s, u) => s + u.amount, 0);
-  const laterTotal = upcomingLater.reduce((s, u) => s + u.amount, 0);
+  const upcomingDueThisWeek = filteredUpcoming.filter(u => u.days_until_due <= 7);
+  const upcomingLater = filteredUpcoming.filter(u => u.days_until_due > 7);
+  const weekTotal = upcomingSummary?.due_this_week_total || upcomingDueThisWeek.reduce((s, u) => s + (u.amount || 0), 0);
+  const laterTotal = upcomingSummary?.later_total || upcomingLater.reduce((s, u) => s + (u.amount || 0), 0);
 
-  const instCount = filteredHistory.filter(h => h.kind === 'inst').length;
-  const checkoutCount = filteredHistory.filter(h => h.kind === 'checkout').length;
+  const instCount = historyItems.filter(h => h.payment_timing === 'scheduled' || h.type === 'installment').length;
+  const checkoutCount = historyItems.filter(h => h.payment_timing === 'at_order' || h.type === 'at_checkout').length;
 
   const groupedHistory = filteredHistory.reduce((acc, item) => {
-    if (!acc[item.date]) acc[item.date] = [];
-    acc[item.date].push(item);
+    const dateKey = item.payment_date || 'Unknown Date';
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(item);
     return acc;
-  }, {} as Record<string, typeof HISTORY>);
+  }, {} as Record<string, any[]>);
 
-  const RefundCard = () => (
-    <div className={`${styles.payHero} ${styles.refund}`} style={{ marginBottom: 0, height: '100%' }}>
-      <div className={styles.payHeroTop}>
-        <div>
-          <div className={styles.payHeroLbl}>Total Refunds</div>
-          <div className={styles.payHeroAmt}>PKR 63,450</div>
-          <div className={styles.payHeroMethod}><i className="bx bx-credit-card"></i>To Visa •••• 6411 · 3–5 business days</div>
+  const RefundCard = () => {
+    if (!refundHero || (refundHero.refund_count || 0) === 0) return null;
+    return (
+      <div className={`${styles.payHero} ${styles.refund}`} style={{ marginBottom: 0, height: '100%' }}>
+        <div className={styles.payHeroTop}>
+          <div>
+            <div className={styles.payHeroLbl}>Total Refunds</div>
+            <div className={styles.payHeroAmt}>PKR {formatAmount(refundHero.total_amount || 0)}</div>
+            <div className={styles.payHeroMethod}>
+              <i className="bx bx-credit-card"></i>
+              To {refundHero.card_label || 'Card'} · 3–5 business days
+            </div>
+          </div>
+          <span className={styles.payHeroBadge}>{refundHero.refund_count || 0} processed</span>
         </div>
-        <span className={styles.payHeroBadge}>2 refunds</span>
+        <div className={styles.payHeroStats}>
+          <div className={styles.payHeroStat}>
+            <div className={styles.payHeroStatLbl}>Credited</div>
+            <div className={styles.payHeroStatVal}>PKR {formatAmount(refundHero.credited_amount || 0)}</div>
+          </div>
+          <div className={styles.payHeroStat}>
+            <div className={styles.payHeroStatLbl}>Processing</div>
+            <div className={styles.payHeroStatVal}>PKR {formatAmount(refundHero.initiated_amount || 0)}</div>
+          </div>
+        </div>
       </div>
-      <div className={styles.payHeroStats}>
-        <div className={styles.payHeroStat}>
-          <div className={styles.payHeroStatLbl}><i className="bx bx-check-circle"></i>Credited</div>
-          <div className={styles.payHeroStatVal}>PKR 40,500</div>
-        </div>
-        <div className={styles.payHeroStat}>
-          <div className={styles.payHeroStatLbl}><i className="bx bx-time-five"></i>Processing</div>
-          <div className={styles.payHeroStatVal}>PKR 22,950</div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <DashboardLayout breadcrumbTitle="All Payments">
@@ -240,7 +272,10 @@ export default function AllPaymentsPage() {
                     <div>
                       <div className={styles.payHeroLbl}>Total Upcoming</div>
                       <div className={styles.payHeroAmt}>PKR {formatAmount(totalUpcomingAmount)}</div>
-                      <div className={styles.payHeroMethod}><i className="bx bx-time-five"></i>Next payment due in 3 days</div>
+                      <div className={styles.payHeroMethod}>
+                        <i className="bx bx-time-five"></i>
+                        {upcomingSummary?.next_payment_date ? `Next payment due in ${upcomingSummary?.days_until_next || 0} days` : 'No upcoming schedule'}
+                      </div>
                     </div>
                     <span className={styles.payHeroBadge}>{filteredUpcoming.length} due</span>
                   </div>
@@ -275,14 +310,14 @@ export default function AllPaymentsPage() {
                         <div key={`thisweek-${i}`} className={styles.payRow}>
                           <div className={`${styles.payRowIc} ${styles.due}`}><i className="bx bx-calendar"></i></div>
                           <div className={styles.payRowInfo}>
-                            <div className={styles.payRowName}>{u.name}</div>
-                            <div className={styles.payRowSub}>{u.sub}</div>
+                            <div className={styles.payRowName}>{u.package_name || 'Order Payment'}</div>
+                            <div className={styles.payRowSub}>{u.description || ''}</div>
                             <div className={styles.payRowChips}>
-                              <span className={`${styles.payRowChip} ${styles.amber}`}><i className="bx bx-time-five"></i>{u.due}</span>
+                              <span className={`${styles.payRowChip} ${styles.amber}`}><i className="bx bx-time-five"></i>{u.due_date || 'Unknown'}</span>
                             </div>
                           </div>
                           <div className={styles.payRowRight}>
-                            <div className={`${styles.payRowAmt} ${styles.amber}`}>PKR {formatAmount(u.amount)}</div>
+                            <div className={`${styles.payRowAmt} ${styles.amber}`}>PKR {formatAmount(u.amount || 0)}</div>
                             <div className={styles.payRowDue}>auto-charged</div>
                           </div>
                         </div>
@@ -297,14 +332,14 @@ export default function AllPaymentsPage() {
                         <div key={`later-${i}`} className={styles.payRow}>
                           <div className={`${styles.payRowIc} ${styles.due}`}><i className="bx bx-calendar"></i></div>
                           <div className={styles.payRowInfo}>
-                            <div className={styles.payRowName}>{u.name}</div>
-                            <div className={styles.payRowSub}>{u.sub}</div>
+                            <div className={styles.payRowName}>{u.package_name || 'Order Payment'}</div>
+                            <div className={styles.payRowSub}>{u.description || ''}</div>
                             <div className={styles.payRowChips}>
-                              <span className={`${styles.payRowChip} ${styles.amber}`}><i className="bx bx-time-five"></i>{u.due}</span>
+                              <span className={`${styles.payRowChip} ${styles.amber}`}><i className="bx bx-time-five"></i>{u.due_date || 'Unknown'}</span>
                             </div>
                           </div>
                           <div className={styles.payRowRight}>
-                            <div className={`${styles.payRowAmt} ${styles.amber}`}>PKR {formatAmount(u.amount)}</div>
+                            <div className={`${styles.payRowAmt} ${styles.amber}`}>PKR {formatAmount(u.amount || 0)}</div>
                             <div className={styles.payRowDue}>auto-charged</div>
                           </div>
                         </div>
@@ -326,7 +361,10 @@ export default function AllPaymentsPage() {
                     <div>
                       <div className={styles.payHeroLbl}>Total Paid</div>
                       <div className={styles.payHeroAmt}>PKR {formatAmount(totalPaidAmount)}</div>
-                      <div className={styles.payHeroMethod}><i className="bx bx-credit-card"></i>Visa •••• 6411</div>
+                      <div className={styles.payHeroMethod}>
+                        <i className="bx bx-credit-card"></i>
+                        {historyItems.length > 0 && historyItems[0].card_last_four ? `${historyItems[0].card_type || 'Card'} •••• ${historyItems[0].card_last_four}` : 'Multiple Methods'}
+                      </div>
                     </div>
                     <span className={styles.payHeroBadge}>{filteredHistory.length} paid</span>
                   </div>
@@ -356,19 +394,22 @@ export default function AllPaymentsPage() {
                 Object.keys(groupedHistory).map(date => (
                   <React.Fragment key={date}>
                     <div className={styles.payDateHead}><i className="bx bx-calendar"></i>{date}</div>
-                    {groupedHistory[date].map((h, i) => (
+                    {groupedHistory[date].map((h: any, i: number) => (
                       <div key={`hist-${date}-${i}`} className={styles.payRow}>
                         <div className={`${styles.payRowIc} ${styles.paid}`}><i className="bx bx-check"></i></div>
                         <div className={styles.payRowInfo}>
-                          <div className={styles.payRowName}>{h.name}</div>
-                          <div className={styles.payRowSub}>{h.sub}</div>
+                          <div className={styles.payRowName}>{h.package_name || 'Order Payment'}</div>
+                          <div className={styles.payRowSub}>{h.description || ''}</div>
                           <div className={styles.payRowChips}>
                             <span className={`${styles.payRowChip} ${styles.green}`}><i className="bx bx-check-circle"></i>Paid</span>
-                            <span className={styles.payRowMethod}>{h.method}</span>
+                            {(h.chips || []).map((chip: string, ci: number) => (
+                              <span key={ci} className={styles.payRowChip}>{chip}</span>
+                            ))}
+                            <span className={styles.payRowMethod}>{h.card_type ? `${h.card_type} •••• ${h.card_last_four}` : ''}</span>
                           </div>
                         </div>
                         <div className={styles.payRowRight}>
-                          <div className={`${styles.payRowAmt} ${styles.green}`}>PKR {formatAmount(h.amount)}</div>
+                          <div className={`${styles.payRowAmt} ${styles.green}`}>PKR {formatAmount(h.amount || 0)}</div>
                         </div>
                       </div>
                     ))}

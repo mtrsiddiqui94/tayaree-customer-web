@@ -72,7 +72,9 @@ export default function DashboardLayout({ children, breadcrumbTitle = 'Dashboard
                       <i className="bx bx-user"></i>
                     )}
                   </div>
-                  <h3 className={styles.userName}>{user?.name || 'unset'}</h3>
+                  <h3 className={styles.userName}>
+                    {user?.full_name || user?.name || (user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'unset')}
+                  </h3>
                   <p className={styles.userEmail}>{user?.email || 'unset'}</p>
                   <p className={styles.userPhone}>
                     {user?.phone && user.phone !== 'unset' ? `+${user.phone_country || '92'} ${user.phone}` : 'unset'}
