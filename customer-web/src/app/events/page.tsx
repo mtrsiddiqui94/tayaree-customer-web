@@ -97,25 +97,23 @@ export default function EventsPage() {
   async function loadData() {
     setIsLoading(true);
     let combinedRaw: any[] = [];
-    
-    // Read local events if any
-    try {
-      const localEvts = JSON.parse(localStorage.getItem('local_events') || '[]');
-      if (Array.isArray(localEvts)) combinedRaw = [...localEvts];
-    } catch (e) {
-      console.error(e);
-    }
 
     const res = await api.safeCall(() => api.get<any>('/api/v1/events'));
     if (res.success && res.data) {
       const rawList = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
-      if (rawList.length > 0) {
-        combinedRaw = [...combinedRaw, ...rawList];
+      combinedRaw = [...rawList];
+    } else {
+      // Read local events fallback if API table/migration is missing
+      try {
+        const localEvts = JSON.parse(localStorage.getItem('local_events') || '[]');
+        if (Array.isArray(localEvts)) combinedRaw = [...localEvts];
+      } catch (e) {
+        console.error(e);
       }
     }
 
     if (combinedRaw.length > 0) {
-      const backendEvents = combinedRaw.map((item: any) => {
+      const parsedEvents = combinedRaw.map((item: any) => {
         const typeStr = typeof item.event_type === 'string' ? item.event_type : (item.event_type?.name || 'Event');
         const quotes = item.quote_count ?? item.quotes_count ?? 0;
         const registries = item.registry_count ?? 0;
@@ -129,16 +127,18 @@ export default function EventsPage() {
           date: item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date TBD',
           img: item.cover_image || 'https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?w=600&h=360&fit=crop',
           guests: `${guestsNum} guests`,
-          status: quotes > 0 ? 'quoted' : 'planning',
+          status: (quotes > 0 ? 'quoted' : 'planning') as 'quoted' | 'planning' | 'booked',
           statusLabel: quotes > 0 ? `${quotes} quotes` : 'Planning',
           chips: [
-            ...(quotes > 0 ? [{ c: 'amber', i: 'bx-receipt', t: `${quotes} quotes` }] : []),
-            ...(registries > 0 ? [{ c: 'success', i: 'bx-gift', t: `${registries} registry` }] : []),
-            { c: 'neutral', i: 'bx-group', t: `${guestsNum} guests` }
+            ...(quotes > 0 ? [{ c: 'amber' as const, i: 'bx-receipt', t: `${quotes} quotes` }] : []),
+            ...(registries > 0 ? [{ c: 'success' as const, i: 'bx-gift', t: `${registries} registry` }] : []),
+            { c: 'neutral' as const, i: 'bx-group', t: `${guestsNum} guests` }
           ]
         };
       });
-      setEvents(backendEvents);
+      setEvents(parsedEvents);
+    } else {
+      setEvents([]);
     }
     setIsLoading(false);
   }

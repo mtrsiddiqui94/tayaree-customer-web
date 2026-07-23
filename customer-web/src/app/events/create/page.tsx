@@ -15,6 +15,7 @@ export default function CreateEventPage() {
   const [eventName, setEventName] = useState('');
   const [eventTypeId, setEventTypeId] = useState('');
   const [dateMode, setDateMode] = useState<'specific' | 'flexible'>('specific');
+  const [dateFlexibility, setDateFlexibility] = useState<'exact' | '1_day' | '2_days'>('1_day');
   const [eventDate, setEventDate] = useState(''); // simplified date
   const [guests, setGuests] = useState(200);
   const [budgetMode, setBudgetMode] = useState<'perhead' | 'fixed'>('perhead');
@@ -69,53 +70,38 @@ export default function CreateEventPage() {
     }
 
     setIsSubmitting(true);
-    const payload = {
-      event_name: eventName,
-      event_type_id: Number(eventTypeId),
-      event_date: eventDate || new Date().toISOString().split('T')[0],
-      guest_count: Number(guests),
+    const cleanBudget = parseFloat(budgetAmount.replace(/,/g, ''));
+    const payload: any = {
+      event_name: eventName.trim(),
+      event_type_id: parseInt(eventTypeId, 10),
+      event_date: eventDate || null,
+      guest_count: guests ? parseInt(guests as any, 10) : null,
       budget_type: budgetMode === 'perhead' ? 'per_head' : 'fixed_total',
-      budget_amount: parseFloat(budgetAmount.replace(/,/g, '')) || 0,
-      notes: notes || null,
-      contact_phone: contactPhone || null
+      budget_amount: cleanBudget > 0 ? cleanBudget : null,
+      notes: notes.trim() || null,
+      contact_phone: contactPhone.trim() || null
     };
 
-    const res = await api.safeCall(() => api.post<any>('/api/v1/events', payload));
+    // Strip null/empty values matching Flutter _encode in event_repository_impl.dart
+    const cleanPayload: any = {};
+    Object.keys(payload).forEach(key => {
+      if (payload[key] !== null && payload[key] !== undefined && payload[key] !== '') {
+        cleanPayload[key] = payload[key];
+      }
+    });
+
+    const res = await api.safeCall(() => api.post<any>('/api/v1/events', cleanPayload));
     
-    if (res.success && res.data?.data) {
+    if (res.success && (res.data?.data || res.data?.id || res.data?.status === true)) {
       showToast('Event created successfully!', 'success');
-      const newId = res.data?.data?.id || res.data?.id || 'ahmed-wedding';
       setTimeout(() => {
-        router.push(`/events/${newId}`);
+        router.push('/events');
       }, 1000);
     } else {
-      // Backend database table error fallback (e.g. missing system_statuses table)
-      // Save locally to localStorage so user flow remains seamless
-      const newId = 'evt_' + Date.now();
-      const newLocalEvent = {
-        id: newId,
-        event_name: eventName,
-        event_type: eventTypes.find(t => String(t.id) === String(eventTypeId))?.name || 'Event',
-        event_date: eventDate,
-        guest_count: Number(guests),
-        budget_type: budgetMode === 'perhead' ? 'per_head' : 'fixed_total',
-        budget_amount: parseFloat(budgetAmount.replace(/,/g, '')) || 0,
-        cover_image: 'https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?w=600&h=360&fit=crop',
-        quote_count: 0,
-        registry_count: 0
-      };
-
-      try {
-        const existing = JSON.parse(localStorage.getItem('local_events') || '[]');
-        localStorage.setItem('local_events', JSON.stringify([newLocalEvent, ...existing]));
-      } catch (e) {
-        console.error('LocalStorage save error:', e);
-      }
-
-      showToast('Event created successfully!', 'success');
-      setTimeout(() => {
-        router.push(`/events/${newId}`);
-      }, 1000);
+      const errMsg = res.message || 'Failed to create event.';
+      showToast(`Error: ${errMsg}`, 'error');
+      setIsSubmitting(false);
+      return;
     }
     setIsSubmitting(false);
   };
@@ -210,9 +196,27 @@ export default function CreateEventPage() {
                   />
                   <div className={styles.secMini}><i className="bx bx-calendar-star"></i>Is your date flexible?</div>
                   <div className={styles.chipsRow}>
-                    <div className={styles.pchip}>Exact day</div>
-                    <div className={`${styles.pchip} ${styles.pchipSelected}`}>± 1 day</div>
-                    <div className={styles.pchip}>± 2 days</div>
+                    <div
+                      className={`${styles.pchip} ${dateFlexibility === 'exact' ? styles.pchipSelected : ''}`}
+                      onClick={() => setDateFlexibility('exact')}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      Exact day
+                    </div>
+                    <div
+                      className={`${styles.pchip} ${dateFlexibility === '1_day' ? styles.pchipSelected : ''}`}
+                      onClick={() => setDateFlexibility('1_day')}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      ± 1 day
+                    </div>
+                    <div
+                      className={`${styles.pchip} ${dateFlexibility === '2_days' ? styles.pchipSelected : ''}`}
+                      onClick={() => setDateFlexibility('2_days')}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      ± 2 days
+                    </div>
                   </div>
                 </div>
               )}

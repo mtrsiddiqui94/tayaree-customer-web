@@ -361,15 +361,17 @@
 }
 
 .payHero.paid {
-  background: linear-gradient(145deg, #15692F 0%, #1A7A36 60%, #2E9D4E 100%);
+  background: linear-gradient(135deg, #5CB860 0%, #388E3C 100%);
+  box-shadow: 0 6px 18px rgba(56, 142, 60, 0.24);
 }
 
 .payHero.upcoming {
-  background: linear-gradient(145deg, #8A6300 0%, #C8920A 60%, #E0A92E 100%);
+  background: linear-gradient(135deg, #8A6300 0%, #C8920A 60%, #E0A92E 100%);
 }
 
 .payHero.refund {
-  background: linear-gradient(145deg, #0C6B5C 0%, #12A08B 55%, #2FBFA8 100%);
+  background: linear-gradient(135deg, #26A69A 0%, #00897B 100%);
+  box-shadow: 0 6px 18px rgba(38, 166, 154, 0.28);
 }
 
 .payHero::before {
@@ -521,9 +523,29 @@
   color: var(--success);
 }
 
+.payRowIc.order {
+  background: rgba(26, 107, 181, 0.08);
+  color: var(--info);
+}
+
+.payRowIc.installment {
+  background: rgba(200, 146, 10, 0.12);
+  color: var(--amber);
+}
+
+.payRowIc.refund {
+  background: rgba(0, 137, 123, 0.12);
+  color: #00897B;
+}
+
 .payRowIc.due {
   background: rgba(200, 146, 10, 0.12);
   color: var(--amber);
+}
+
+.payRowIc.overdue {
+  background: rgba(215, 25, 33, 0.08);
+  color: var(--primary);
 }
 
 .payRowInfo {
@@ -539,14 +561,14 @@
 
 .payRowSub {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
 .payRowChips {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -571,10 +593,69 @@
   color: var(--amber);
 }
 
+.payRowChip.red {
+  background: rgba(215, 25, 33, 0.08);
+  color: var(--primary);
+}
+
+.payRowChip.teal {
+  background: rgba(0, 137, 123, 0.12);
+  color: #00897B;
+}
+
+.dueLineRed {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.dueLineAmber {
+  color: var(--amber);
+  font-weight: 600;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.dueLineMuted {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 .payRowMethod {
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.payRowAmt.red {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.payRowAmt.teal {
+  color: #00897B;
+  font-weight: 700;
+}
+
+.payRowAmt.green {
+  color: var(--success);
+  font-weight: 700;
 }
 
 .payRowRight {
