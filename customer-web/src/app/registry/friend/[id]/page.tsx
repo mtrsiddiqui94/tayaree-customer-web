@@ -33,7 +33,7 @@ interface RegistryDetail {
 export default function RegistryFriendPage() {
   const router = useRouter();
   const { id } = useParams();
-  const { fetchCartCount } = useCart();
+  const { refreshCartCount } = useCart();
   
   const [registry, setRegistry] = useState<RegistryDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,7 +88,7 @@ export default function RegistryFriendPage() {
       // Assuming a friend can add it to their cart
       await api.post(ENDPOINTS.CART_ADD, { product_id: itemId, is_registry_gift: true, registry_id: id });
       showToast('Added to your cart as a gift');
-      fetchCartCount();
+      refreshCartCount();
       loadDetail();
     } catch (e) {
       showToast('Failed to add to cart', 'error');

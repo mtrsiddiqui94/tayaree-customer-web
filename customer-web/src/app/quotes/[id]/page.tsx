@@ -54,7 +54,7 @@ export default function QuoteDetailPage() {
       setError(null);
       const limit = PAGINATION.QUOTES_LIMIT || 20;
       
-      const response = await api.get(`${ENDPOINTS.QUOTE_CATALOG_ITEMS(storeTypeSlug)}?page=${pageNum}&limit=${limit}`);
+      const response = await api.get<any>(`${ENDPOINTS.QUOTE_CATALOG_ITEMS(storeTypeSlug)}?page=${pageNum}&limit=${limit}`);
       
       if (response.success && response.data) {
         const body = response.data.data ? response.data : { data: response.data };

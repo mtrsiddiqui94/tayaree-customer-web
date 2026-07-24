@@ -160,14 +160,14 @@ interface DeliverySubItem {
 
 interface DeliveryPackage {
   key: string;
-  packageId: number;
-  itemId: number;
+  packageId?: number;
+  itemId?: number;
   status: 'arriving' | 'delivered';
   statusLabel: string;
   statusClass: string;
   name: string;
   vendor: string;
-  deliverAs: string;
+  deliverAs?: string;
   img: string;
   date: string;
   meta: string;
@@ -344,12 +344,12 @@ export default function DeliveriesPage() {
       });
 
       if (res.status !== false) {
-        setDeliveries(prev => prev.map(item => {
-          if (item.key === selectedItem.key) {
-            return { ...item, instruction: instructionText };
-          }
-          return item;
-        }));
+        setDeliveries(prev => prev.map(group => ({
+          ...group,
+          packages: group.packages.map(pkg =>
+            pkg.key === selectedItem.key ? { ...pkg, instruction: instructionText } : pkg
+          ),
+        })));
         showToast(res.message || 'Delivery instructions updated successfully.', 'success');
         setOpenDrawerType(null);
       } else {

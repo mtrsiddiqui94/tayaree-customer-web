@@ -53,7 +53,7 @@ export default function QuotesPage() {
       setError(null);
       const limit = PAGINATION.QUOTES_LIMIT || 20;
       
-      const response = await api.get(`${ENDPOINTS.QUOTE_CATALOG_PACKAGES(storeTypeSlug)}?page=${pageNum}&limit=${limit}`);
+      const response = await api.get<any>(`${ENDPOINTS.QUOTE_CATALOG_PACKAGES(storeTypeSlug)}?page=${pageNum}&limit=${limit}`);
       
       if (response.success && response.data) {
         // Handle varying envelope shapes based on backend implementation

@@ -77,7 +77,7 @@ export default function ChatPage() {
         if (res && res.status && res.data && Array.isArray(res.data)) {
           const fetchedMessages = res.data.map((m: any) => ({
             id: m.id || Date.now() + Math.random(),
-            sender: m.sender_type === 'vendor' ? 'vendor' : 'user',
+            sender: (m.sender_type === 'vendor' ? 'vendor' : 'user') as 'user' | 'vendor',
             text: m.message,
             timestamp: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             type: m.type || 'text',
