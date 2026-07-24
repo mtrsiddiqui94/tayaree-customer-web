@@ -98,7 +98,7 @@ export default function CreateEventPage() {
         router.push('/events');
       }, 1000);
     } else {
-      const errMsg = (!res.success && res.message) || 'Failed to create event.';
+      const errMsg = (res as any).message || (res as any).error || 'Failed to create event.';
       showToast(`Error: ${errMsg}`, 'error');
       setIsSubmitting(false);
       return;
