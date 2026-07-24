@@ -86,6 +86,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
+    // ponytail: no interactive toast during SSR/prerender; no-op stops static export from crashing. Still throws in-browser to catch a genuinely missing provider.
+    if (typeof window === 'undefined') return { showToast: () => {} };
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;

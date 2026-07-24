@@ -50,6 +50,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
+    // ponytail: SSR/prerender no-op so static export doesn't crash; throws in-browser to catch a missing provider.
+    if (typeof window === 'undefined') {
+      return { cartCount: 0, refreshCartCount: async () => {}, incrementCount: () => {}, decrementCount: () => {}, setCount: () => {} };
+    }
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
