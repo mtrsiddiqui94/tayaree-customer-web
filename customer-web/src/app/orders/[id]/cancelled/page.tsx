@@ -1,174 +1,246 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { formatPrice } from '@/lib/formatPrice';
-import styles from './page.module.css';
+import { Container } from '@/components/layout/Container';
+import styles from './cancelled.module.css';
 
-export default function OrderCancelledPage() {
-  const router = useRouter();
-  const params = useParams();
-  const orderId = params?.id as string || '';
+interface CancelledPackage {
+  name: string;
+  vendor?: string;
+  img?: string;
+  refund?: number;
+}
 
-  const [isPkgOpen, setIsPkgOpen] = useState(false);
-  const [cancelDetails, setCancelDetails] = useState<any>(null);
+export default function OrderCancelledPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = React.use(params);
+  const orderId = unwrappedParams.id;
+
+  const [isPkgOpen, setIsPkgOpen] = useState(true);
+
+  const [cancelInfo, setCancelInfo] = useState({
+    orderNumber: `#TAY-${orderId}`,
+    cancelDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    refundReference: `#RF-${orderId}-9432`,
+    paymentMethod: 'Visa ending in •••• 6411',
+    refundTotal: 'PKR 94,432',
+    cancelledPackages: [] as CancelledPackage[],
+  });
+
+  const formatAmount = (num: number) => `PKR ${num.toLocaleString('en-US')}`;
 
   useEffect(() => {
-    const data = localStorage.getItem('temp_cancel_details');
-    if (data) {
-      try {
-        setCancelDetails(JSON.parse(data));
-      } catch(e){}
+    try {
+      const stored = localStorage.getItem('confirmed_cancellation');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+          const rawOrd = parsed.orderNumber || orderId;
+          const formattedOrd = String(rawOrd).startsWith('#')
+            ? String(rawOrd)
+            : (String(rawOrd).includes('-') ? `#${rawOrd}` : `#SXE-224-${String(rawOrd).padStart(6, '0')}`);
+          setCancelInfo({
+            orderNumber: formattedOrd,
+            cancelDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            refundReference: parsed.refundReference || `#RF-${orderId}-9432`,
+            paymentMethod: parsed.paymentMethod || 'Visa ending in •••• 6411',
+            refundTotal: formatAmount(parsed.refundTotal || 0),
+            cancelledPackages: parsed.cancelledPackages || [],
+          });
+        }
+      } catch (e) {
+      console.error('Error parsing confirmed cancellation', e);
     }
-  }, []);
-
-  const toggleTyPkg = () => {
-    setIsPkgOpen(!isPkgOpen);
-  };
-
-  const refundTotal = cancelDetails?.refundTotal || 0;
-  const reason = cancelDetails?.reason || 'Event date changed';
-  const cancelledPackages = cancelDetails?.cancelledPackages || [];
+  }, [orderId]);
 
   return (
     <>
       <Header />
+      <div className={styles.page}>
+        <Container style={{ paddingBottom: '100px' }}>
+          <nav className={styles.breadcrumb}>
+            <Link href="/">Home</Link>
+            <span className={styles.sep}>/</span>
+            <Link href="/orders">My Orders</Link>
+            <span className={styles.sep}>/</span>
+            <Link href={`/orders/${orderId}`}>Order Details</Link>
+            <span className={styles.sep}>/</span>
+            <span className={styles.current}>Order Cancelled</span>
+          </nav>
 
-      <main className={styles.page}>
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <Link href="/orders">My Orders</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>Order Cancelled</span>
-        </div>
-
-        <div className={styles.thankyouPanel}>
-          <div className={styles.tyHero}>
-            <div className={styles.tyCircle}>
-              <i className="bx bx-calendar-x"></i>
+          <div className={styles.thankyouPanel}>
+            {/* HERO BADGE */}
+            <div className={styles.tyHero}>
+              <div className={styles.tyCircle}>
+                <i className="bx bx-shopping-bag"></i>
+              </div>
             </div>
-          </div>
-          <div className={styles.tyTitle}>Your cancellation is confirmed</div>
-          <div className={styles.tySub}>
-            We&apos;re sorry to see your plans change — sometimes they do.<br />
-            Your refund is on its way, and your event is always welcome back with us.
-          </div>
 
-          <div className={styles.tyGrid}>
-            <div className={styles.tyCard}>
-              <div className={styles.tyCardTitle}>
-                <i className="bx bx-receipt"></i>Cancellation Summary
-              </div>
-              <div className={styles.tyRow}>
-                <span className={styles.tyRowLbl}>Order Number</span>
-                <span className={styles.tyRowVal} style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '.3px' }}>
-                  #{orderId}
-                </span>
-              </div>
-              <div className={styles.tyDivider}></div>
-              <div className={styles.tyRow}>
-                <span className={styles.tyRowLbl}>Cancelled On</span>
-                <span className={styles.tyRowVal}>
-                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </span>
-              </div>
-              <div className={styles.tyDivider}></div>
-              <div className={styles.tyRow}>
-                <span className={styles.tyRowLbl}>Reason</span>
-                <span className={styles.tyRowVal}>{reason}</span>
-              </div>
-              <div className={styles.tyDivider}></div>
-              <div className={styles.tyRow}>
-                <span className={styles.tyRowLbl}>Total Refund</span>
-                <span className={styles.tyRowVal} style={{ color: 'var(--success)' }}>
-                  PKR {formatPrice(refundTotal)}
-                </span>
-              </div>
+            <h1 className={styles.tyTitle}>Cancellation Confirmed</h1>
+            <p className={styles.tySub}>
+              We&apos;re sorry to see your plans change — sometimes they do.<br />
+              Your refund is on its way, and your event is always welcome back with us.
+            </p>
 
-              <div className={`${styles.tyPkgAcc} ${isPkgOpen ? styles.open : ''}`}>
-                <button className={styles.tyPkgHead} onClick={toggleTyPkg}>
-                  <span className={styles.tyPkgHeadLbl}>
-                    <i className="bx bx-package"></i>Cancelled Packages <span className={styles.tyPkgCount}>{cancelledPackages.length}</span>
+            {/* DETAILS GRID */}
+            <div className={styles.tyGrid}>
+              <div className={styles.tyCard}>
+                <div className={styles.tyCardTitle}>
+                  <i className="bx bx-receipt"></i> Cancellation Summary
+                </div>
+
+                <div className={styles.tyRow}>
+                  <span className={styles.tyRowLbl}>Refund Reference</span>
+                  <span className={styles.tyRowVal} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {cancelInfo.refundReference}
                   </span>
-                  <i className={`bx bx-chevron-down ${styles.tyPkgChev}`}></i>
-                </button>
-                <div className={styles.tyPkgBody}>
-                  {cancelledPackages.map((pkg: any, i: number) => (
-                    <div className={styles.tyPkgRow} key={i}>
-                      <img className={styles.sdbImg} src={pkg.img || 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=100&h=100&q=80'} alt={pkg.name} />
-                      <div className={styles.sdbInfo}>
-                        <div className={styles.sdbName}>{pkg.name}</div>
-                        <div className={styles.sdbPkg}>{pkg.vendor} · refund after fee</div>
+                </div>
+                <div className={styles.tyDivider}></div>
+
+                <div className={styles.tyRow}>
+                  <span className={styles.tyRowLbl}>Order Number</span>
+                  <span className={styles.tyRowVal}>{cancelInfo.orderNumber}</span>
+                </div>
+                <div className={styles.tyDivider}></div>
+
+                <div className={styles.tyRow}>
+                  <span className={styles.tyRowLbl}>Cancellation Date</span>
+                  <span className={styles.tyRowVal}>{cancelInfo.cancelDate}</span>
+                </div>
+                <div className={styles.tyDivider}></div>
+
+                <div className={styles.tyRow}>
+                  <span className={styles.tyRowLbl}>Refund Status</span>
+                  <span className={styles.tyRowVal} style={{ color: 'var(--success)' }}>
+                    Refund Initiated
+                  </span>
+                </div>
+
+                {/* CANCELLED PACKAGES ACCORDION */}
+                <div className={`${styles.tyPkgAcc} ${isPkgOpen ? styles.open : ''}`}>
+                  <button
+                    type="button"
+                    className={styles.tyPkgHead}
+                    onClick={() => setIsPkgOpen(!isPkgOpen)}
+                  >
+                    <span className={styles.tyPkgHeadLbl}>
+                      <i className="bx bx-package"></i> Packages Cancelled
+                    </span>
+                    <i className={`bx bx-chevron-down ${styles.tyPkgChev}`}></i>
+                  </button>
+
+                  <div className={styles.tyPkgBody}>
+                    {cancelInfo.cancelledPackages.length > 0 ? (
+                      cancelInfo.cancelledPackages.map((pkg, idx) => (
+                        <div key={idx} className={styles.tyPkgRow}>
+                          {pkg.img ? (
+                            <img src={pkg.img} alt={pkg.name} className={styles.sdbImg} />
+                          ) : (
+                            <div
+                              className={styles.sdbImg}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '18px',
+                                color: 'var(--text-muted)',
+                              }}
+                            >
+                              <i className="bx bx-box"></i>
+                            </div>
+                          )}
+                          <div className={styles.sdbInfo}>
+                            <div className={styles.sdbName}>{pkg.name}</div>
+                            {pkg.vendor && <div className={styles.sdbPkg}>{pkg.vendor}</div>}
+                          </div>
+                          {pkg.refund && (
+                            <div className={styles.sdbPrice}>{formatAmount(pkg.refund)}</div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.tyPkgRow} style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                        Line items released back to vendor schedule.
                       </div>
-                      <div className={styles.sdbPrice}>PKR {formatPrice(pkg.amount * 0.27)}</div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* REFUND CARD */}
+              <div className={styles.tyPayCard}>
+                <div className={styles.tyPaidLbl}>
+                  <i className="bx bx-check-circle"></i> TOTAL REFUND INITIATED
+                </div>
+                <div className={styles.tyPaidBig}>{cancelInfo.refundTotal}</div>
+                <div className={styles.tyPaidMethod}>{cancelInfo.paymentMethod}</div>
+
+                <div className={styles.tyFutureBlock}>
+                  <div className={styles.tyFutureLbl}>
+                    <i className="bx bx-time-five"></i> Refund Credited
+                  </div>
+                  <div className={styles.tyFutureDue}>
+                    Within 3–5 business days to your original payment method.
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className={styles.tyPayCard}>
-              <div className={styles.tyPaidLbl}><i className="bx bx-check-circle"></i>Refund Initiated</div>
-              <div className={styles.tyPaidBig}>PKR {formatPrice(refundTotal)}</div>
-              <div className={styles.tyPaidMethod}>To original payment method</div>
-              <div className={styles.tyFutureBlock}>
-                <div className={styles.tyFutureLbl}><i className="bx bx-time-five"></i>Expected in 3–5 business days</div>
-                <div className={styles.tyFutureDue}>
-                  A cancellation fee (10%) was deducted as per policy. You&apos;ll get a notification once the refund settles.
+            {/* NEXT STEPS */}
+            <div className={styles.tyNextTitle}>
+              <i className="bx bx-list-check"></i> What happens next
+            </div>
+
+            <div className={styles.tySteps}>
+              <div className={styles.tyStep}>
+                <div className={styles.tyStepTop}>
+                  <div className={styles.tyStepNum}>1</div>
+                  <i className={`bx bx-wallet ${styles.tyStepIcon}`}></i>
+                </div>
+                <div className={styles.tyStepTitle}>Refund Processing</div>
+                <div className={styles.tyStepDesc}>
+                  {cancelInfo.refundTotal} is being returned to your {cancelInfo.paymentMethod}. It typically lands within 3–5 business days.
+                </div>
+              </div>
+
+              <div className={styles.tyStep}>
+                <div className={styles.tyStepTop}>
+                  <div className={styles.tyStepNum}>2</div>
+                  <i className={`bx bx-bell ${styles.tyStepIcon}`}></i>
+                </div>
+                <div className={styles.tyStepTitle}>Vendors Notified</div>
+                <div className={styles.tyStepDesc}>
+                  {cancelInfo.cancelledPackages.length > 0
+                    ? `${Array.from(new Set(cancelInfo.cancelledPackages.map((p) => p.vendor).filter(Boolean))).join(', ')} have been informed and have released your booking slots.`
+                    : 'Vendors have been informed and have released your booking slots.'}
+                </div>
+              </div>
+
+              <div className={styles.tyStep}>
+                <div className={styles.tyStepTop}>
+                  <div className={styles.tyStepNum}>3</div>
+                  <i className={`bx bx-heart ${styles.tyStepIcon}`}></i>
+                </div>
+                <div className={styles.tyStepTitle}>Rebook Anytime</div>
+                <div className={styles.tyStepDesc}>
+                  When your new date is set, these vendors are just a tap away. Your other packages remain active.
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className={styles.tyNextTitle}><i className="bx bx-list-ol"></i>What happens next</div>
-          <div className={styles.tySteps}>
-            <div className={styles.tyStep}>
-              <div className={styles.tyStepTop}>
-                <div className={styles.tyStepNum}>1</div>
-                <i className="bx bx-wallet ${styles.tyStepIcon}"></i>
-              </div>
-              <div className={styles.tyStepTitle}>Refund Processing</div>
-              <div className={styles.tyStepDesc}>
-                PKR {formatPrice(refundTotal)} is being returned to your payment method. It typically lands within 3–5 business days.
-              </div>
-            </div>
-            <div className={styles.tyStep}>
-              <div className={styles.tyStepTop}>
-                <div className={styles.tyStepNum}>2</div>
-                <i className={`bx bx-bell ${styles.tyStepIcon}`}></i>
-              </div>
-              <div className={styles.tyStepTitle}>Vendors Notified</div>
-              <div className={styles.tyStepDesc}>
-                Vendors have been informed and have released your booking slots.
-              </div>
-            </div>
-            <div className={styles.tyStep}>
-              <div className={styles.tyStepTop}>
-                <div className={styles.tyStepNum}>3</div>
-                <i className={`bx bx-heart ${styles.tyStepIcon}`}></i>
-              </div>
-              <div className={styles.tyStepTitle}>Rebook Anytime</div>
-              <div className={styles.tyStepDesc}>
-                When your new date is set, these vendors are just a tap away. Your other packages remain active.
-              </div>
+            {/* ACTIONS */}
+            <div className={styles.tyActions}>
+              <Link href="/orders" className={styles.btnTyPrimary}>
+                <i className="bx bx-list-check"></i> Back to My Orders
+              </Link>
+              <Link href="/" className={styles.btnTyOutline}>
+                <i className="bx bx-store-alt"></i> Continue Shopping
+              </Link>
             </div>
           </div>
-
-          <div className={styles.tyActions}>
-            <Link href="/orders" className={styles.btnTyPrimary}>
-              <i className="bx bx-list-check" style={{ fontSize: '18px' }}></i> Back to My Orders
-            </Link>
-            <Link href="/" className={styles.btnTyOutline}>
-              <i className="bx bx-store"></i> Continue Shopping
-            </Link>
-          </div>
-        </div>
-      </main>
-
+        </Container>
+      </div>
       <Footer />
     </>
   );
