@@ -518,7 +518,7 @@ export default function CartPage() {
 
               <div className={styles.cartLayout}>
                 {/* LEFT COLUMN: Items List Card */}
-                <div>
+                <div className={styles.cartMainColumn}>
                   <div className={styles.card}>
                     <div className={styles.cardInner}>
                       {/* Select All Row */}
@@ -782,7 +782,7 @@ export default function CartPage() {
                 </div>
 
                 {/* RIGHT COLUMN: Sidebar Order Estimate totals */}
-                <aside>
+                <aside className={styles.sidebarColumn}>
                   <div className={styles.sidebarSticky}>
                     <div className={styles.bookingCard}>
                       <div className={styles.sidebarHead}>
