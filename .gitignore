@@ -6,3 +6,4 @@
 
 # Track the root gitignore itself
 !/.gitignore
+!/phploy.ini
