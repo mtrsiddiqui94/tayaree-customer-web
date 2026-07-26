@@ -1,627 +1,692 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { Container, TwoColumnLayout } from '@/components/layout/Container';
 import { api } from '@/lib/api';
-import styles from './page.module.css';
+import styles from './cancel.module.css';
 
-interface PackageItem {
-  name: string;
-  img: string;
-  variation: string;
-}
-
-interface PaymentInst {
-  label: string;
-  date: string;
-  amount: number;
-  status: 'paid' | 'future' | 'full';
-}
-
-interface OrderPackage {
-  id: string;
-  key: string;
+interface OrderPackageToCancel {
+  id: string | number;
   name: string;
   vendor: string;
   img: string;
-  status: 'confirmed' | 'transit' | 'delivered' | 'install';
-  statusLabel: string;
-  statusClass: string;
-  metaGuests: string;
-  metaItems: string;
-  deliveryDate: string;
-  packageAmount: number;
+  status: string;
+  statusClass: 'green' | 'amber' | 'blue' | 'red';
+  isCancellable: boolean;
+  restrictionReason?: string;
   amountPaid: number;
-  paidPercent: number;
-  cancellationFee: number;
-  feePercent: number;
-  feeTier: string;
-  refundAmount: number;
-  isSelectable: boolean;
-  restrictReason?: string;
-  items: PackageItem[];
-  schedule: PaymentInst[];
+  futureAmount: number;
+  totalPrice: number;
+  deliveryDate: string;
 }
 
 const REASONS = [
-  "Event date changed",
-  "Found a better deal",
-  "Booked by mistake",
-  "Vendor delayed response",
-  "No longer needed",
-  "Other"
+  'Event postponed / date change required',
+  'Found an alternative vendor or package',
+  'Financial or budget adjustments',
+  'Order placed by mistake',
+  'Other reason',
 ];
 
+function calculateDaysUntilEvent(dateStr: string): number {
+  if (!dateStr || dateStr === 'unset') return 30;
+  try {
+    const eventDate = new Date(dateStr);
+    if (isNaN(eventDate.getTime())) return 30;
+    const today = new Date();
+    const diffTime = eventDate.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  } catch {
+    return 30;
+  }
+}
 
-
-export default function CancelOrderPage() {
+export default function CancelOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const params = useParams();
-  const orderId = params?.id as string || 'TAY-20250315-001';
+  const unwrappedParams = React.use(params);
+  const orderId = unwrappedParams.id;
 
-  const [packages, setPackages] = useState<OrderPackage[]>([]);
-  const [selectedPkgIds, setSelectedPkgIds] = useState<string[]>([]);
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
-  const [reasonComment, setReasonComment] = useState('');
-  
-  // Collapse details tracking
-  const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
-  const [isOrderAmtOpen, setIsOrderAmtOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [packages, setPackages] = useState<OrderPackageToCancel[]>([]);
+  const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+  const [selectedReason, setSelectedReason] = useState<string | null>(REASONS[0]);
+  const [commentNote, setCommentNote] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSec, setRecordSec] = useState(0);
+  const [hasVoiceNote, setHasVoiceNote] = useState(false);
+  const [recordedDuration, setRecordedDuration] = useState(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push(`/login?redirect=/orders/${orderId}/cancel`);
-      return;
+  const togglePlayAudio = () => {
+    if (isPlayingAudio) {
+      setIsPlayingAudio(false);
+    } else {
+      setIsPlayingAudio(true);
+      setTimeout(() => {
+        setIsPlayingAudio(false);
+      }, (recordedDuration || 3) * 1000);
     }
-    loadOrderDetails();
-  }, [orderId]);
+  };
 
-  async function loadOrderDetails() {
+  const [isOrderAmtOpen, setIsOrderAmtOpen] = useState(false);
+
+  const [orderMeta, setOrderMeta] = useState({
+    orderNumber: `#TAY-${orderId}`,
+    orderDate: '',
+    eventDate: '',
+    daysUntilEvent: 30,
+    orderTotal: 0,
+    packagesTotal: 0,
+    shippingTotal: 0,
+    taxesTotal: 0,
+    paidAtCheckout: 0,
+    futurePayments: 0,
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAlreadyCancelled, setIsAlreadyCancelled] = useState(false);
+  const [error, setError] = useState('');
+
+  const formatPrice = (num: number) => `PKR ${num.toLocaleString('en-US')}`;
+
+  const loadOrderData = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
     try {
-      setIsLoading(true);
-      const numOrderId = parseInt(orderId as string, 10);
-      const res = await api.get<{ status: boolean; data: any[] }>('/api/v1/order/list?limit=50&page=1');
-      if (res.status && res.data) {
-        let found: any = null;
-        for (const section of res.data) {
-          const bodyList = section.body || [];
-          const match = bodyList.find((ord: any) => ord.order_id === numOrderId);
-          if (match) {
-            found = match;
-            break;
-          }
-        }
-
-        if (found) {
-          try {
-            const detailRes = await api.get<{status: boolean, data: any}>(`/api/v1/order/items/${found.order_package_line_id}/detail/${found.order_id}?is_full=1`);
-            if (detailRes.status && detailRes.data) {
-              const d = detailRes.data;
-              const loadedPackages: OrderPackage[] = (d.line_item || []).map((pkg: any) => {
-                const pkgAmount = pkg.amount || pkg.order_total || 0;
-                const amtPaid = pkg.paid || 0;
-                const paidPercent = pkgAmount > 0 ? Math.round((amtPaid / pkgAmount) * 100) : 0;
-                
-                const fee = pkg.refund_estimate?.fee_amount || 0;
-                const refundAmount = pkg.refund_estimate?.refund_amount || 0;
-                const feePercent = pkg.refund_estimate?.fee_percentage || 0;
-                const feeTier = pkg.refund_estimate?.tier_label || `${feePercent}%`;
-                
-                const isDel = pkg.package_status === 'Delivered';
-                const isTrans = pkg.package_status === 'In Transit';
-                const selectable = !isDel && !isTrans;
-
-                return {
-                  id: pkg.order_item_id?.toString() || Math.random().toString(),
-                  key: 'custom',
-                  name: pkg.item_name || 'unset',
-                  vendor: pkg.vendor_name || 'unset',
-                  img: pkg.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80',
-                  status: isDel ? 'delivered' : isTrans ? 'transit' : 'confirmed',
-                  statusLabel: pkg.package_status || 'Confirmed',
-                  statusClass: isDel ? 'delivered' : isTrans ? 'transit' : 'confirmed',
-                  metaGuests: (pkg.no_of_guests || 'N/A') + ' Guests',
-                  metaItems: (pkg.quantity || 1) + ' Items',
-                  deliveryDate: pkg.delivery_date || 'unset',
-                  packageAmount: pkgAmount,
-                  amountPaid: amtPaid,
-                  paidPercent: paidPercent,
-                  cancellationFee: fee,
-                  feePercent: feePercent,
-                  feeTier: feeTier,
-                  refundAmount: refundAmount,
-                  isSelectable: selectable,
-                  restrictReason: isDel ? "Delivered packages can't be cancelled" : isTrans ? "In-transit packages can't be cancelled" : undefined,
-                  items: [{ name: pkg.item_name || 'unset', img: pkg.image_url || '', variation: 'Standard' }],
-                  schedule: [
-                    { label: "Booking Deposit", date: "Paid · at checkout", amount: amtPaid, status: "paid" as const },
-                    { label: "Final Balance", date: "Due before event", amount: pkgAmount - amtPaid, status: "future" as const }
-                  ]
-                };
-              });
-
-              if(loadedPackages.length === 0) {
-                 const pkgAmount = found.total_amount || 0;
-                 const amtPaid = found.paid || 0; 
-                 const paidPercent = pkgAmount > 0 ? Math.round((amtPaid / pkgAmount) * 100) : 0;
-                 const fee = found.refund_estimate?.fee_amount || 0;
-                 const refundAmount = found.refund_estimate?.refund_amount || 0;
-                 const feePercent = found.refund_estimate?.fee_percentage || 0;
-                 const feeTier = found.refund_estimate?.tier_label || `${feePercent}%`;
-
-                 loadedPackages.push({
-                   id: found.order_id?.toString() || '1',
-                   key: 'custom',
-                   name: found.package_name || 'Custom Package',
-                   vendor: found.vendor_name || 'Vendor',
-                   img: found.image_url || 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=150&q=80',
-                   status: 'confirmed',
-                   statusLabel: found.package_status || 'Confirmed',
-                   statusClass: 'confirmed',
-                   metaGuests: (found.no_of_guests || 'N/A') + ' Guests',
-                   metaItems: (found.quantity || 1) + ' Items',
-                   deliveryDate: found.delivery_date || 'unset',
-                   packageAmount: pkgAmount,
-                   amountPaid: amtPaid,
-                   paidPercent: paidPercent,
-                   cancellationFee: fee,
-                   feePercent: feePercent,
-                   feeTier: feeTier,
-                   refundAmount: refundAmount,
-                   isSelectable: true,
-                   items: [{ name: found.package_name || 'unset', img: found.image_url || '', variation: 'Standard' }],
-                   schedule: [
-                     { label: "Booking Deposit", date: "Paid", amount: amtPaid, status: "paid" as const },
-                     { label: "Final Balance", date: "Due", amount: pkgAmount - amtPaid, status: "future" as const }
-                   ]
-                 });
-              }
-              setPackages(loadedPackages);
-              setIsLoading(false);
-              return;
-            }
-          } catch(err) {
-            console.error('Detail fetch error', err);
-          }
-        }
+      let detailData: any = null;
+      try {
+        const res = await api.get<{ status: boolean; data: any }>(
+          `/api/v1/order/items/${orderId}/detail/${orderId}?is_full=1`
+        );
+        if (res?.status && res.data) detailData = res.data;
+      } catch {
+        // Fallback
       }
-    } catch (e) {
-      console.error(e);
+
+      let listData: any = null;
+      try {
+        const listRes = await api.get<{ status: boolean; data: any }>(`/api/v1/order/list?order_id=${orderId}`);
+        if (listRes?.status && listRes.data) listData = listRes.data;
+      } catch {
+        // Fallback
+      }
+
+      const rawItems: any[] = detailData?.line_item || (listData?.body?.[0]?.items ? listData.body[0].items : []);
+      const firstItem = rawItems[0] || detailData || {};
+
+      const rawOrdNum =
+        detailData?.order_detail?.order_number ||
+        detailData?.order_number ||
+        firstItem?.order_package_line_id ||
+        firstItem?.order_number ||
+        orderId;
+
+      const formattedOrdNum = String(rawOrdNum).startsWith('#')
+        ? String(rawOrdNum)
+        : (String(rawOrdNum).includes('-') ? `#${rawOrdNum}` : `#SXE-224-${String(rawOrdNum).padStart(6, '0')}`);
+      const evDate = detailData?.event_date || firstItem?.delivery_date || firstItem?.event_date || '';
+      const daysLeft = calculateDaysUntilEvent(evDate);
+
+      let pkgSum = 0;
+      let paidSum = 0;
+
+      function parsePriceNumber(val: any): number {
+        if (val === undefined || val === null || val === '') return 0;
+        if (typeof val === 'number') return val;
+        const numStr = String(val).replace(/[^0-9.]/g, '');
+        const parsed = parseFloat(numStr);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+
+      const parsedPkgs: OrderPackageToCancel[] = (rawItems.length > 0 ? rawItems : [firstItem]).map((itm: any, idx: number) => {
+        const status = (itm.package_status || itm.status || 'Confirmed').toLowerCase();
+        const isDelivered = status.includes('deliver') || status.includes('complete');
+        const isTransit = status.includes('out') || status.includes('transit');
+        const isCancellable = !isDelivered && !isTransit;
+
+        const total =
+          parsePriceNumber(itm.order_total) ||
+          parsePriceNumber(itm.total_amount) ||
+          parsePriceNumber(itm.amount) ||
+          parsePriceNumber(itm.price) ||
+          parsePriceNumber(itm.rate_per_head) ||
+          parsePriceNumber(detailData?.order_detail?.order_total) ||
+          parsePriceNumber(detailData?.order_detail?.total_amount) ||
+          parsePriceNumber(listData?.body?.[0]?.rate_per_head) ||
+          parsePriceNumber(listData?.body?.[0]?.total_amount) ||
+          0;
+
+        const paid =
+          parsePriceNumber(itm.amount_paid) ||
+          parsePriceNumber(itm.paid_amount) ||
+          parsePriceNumber(detailData?.order_detail?.amount_paid) ||
+          Math.round(total * 0.3);
+
+        const future = Math.max(0, total - paid);
+
+        pkgSum += total;
+        paidSum += paid;
+
+        return {
+          id: itm.order_package_line_id || itm.id || idx + 1,
+          name: itm.package_name || itm.item_name || itm.name || 'Package',
+          vendor: itm.vendor_name || itm.store_name || 'Vendor',
+          img: itm.image_url || '',
+          status: isDelivered ? 'Delivered' : isTransit ? 'In Transit' : 'Confirmed',
+          statusClass: isDelivered ? 'green' : isTransit ? 'amber' : 'blue',
+          isCancellable,
+          restrictionReason: !isCancellable ? (isDelivered ? 'Package has already been delivered.' : 'Package is currently out for delivery.') : undefined,
+          amountPaid: paid,
+          futureAmount: future,
+          totalPrice: total,
+          deliveryDate: itm.delivery_date || evDate || 'Scheduled Date',
+        };
+      });
+
+      const shipping = detailData?.shipping_amount ? parseFloat(detailData.shipping_amount) : 0;
+      const taxes = detailData?.tax_amount ? parseFloat(detailData.tax_amount) : 0;
+      const grandTotal = pkgSum + shipping + taxes;
+
+      setOrderMeta({
+        orderNumber: formattedOrdNum,
+        orderDate: detailData?.booking_date || firstItem?.booking_date || '',
+        eventDate: evDate,
+        daysUntilEvent: daysLeft,
+        orderTotal: grandTotal,
+        packagesTotal: pkgSum,
+        shippingTotal: shipping,
+        taxesTotal: taxes,
+        paidAtCheckout: paidSum,
+        futurePayments: Math.max(0, grandTotal - paidSum),
+      });
+
+      setPackages(parsedPkgs);
+      const cancellable = parsedPkgs.filter((p) => p.isCancellable);
+      if (cancellable.length > 0) {
+        setSelectedIds([cancellable[0].id]);
+      }
+
+      try {
+        const confirmedCancel = localStorage.getItem('confirmed_cancellation');
+        if (confirmedCancel) {
+          const parsedC = JSON.parse(confirmedCancel);
+          if (String(parsedC.orderId) === String(orderId)) {
+            setIsAlreadyCancelled(true);
+          }
+        }
+      } catch {}
+    } catch {
+      setError('Failed to load order details for cancellation.');
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [orderId]);
 
-  const togglePackage = (pkg: OrderPackage) => {
-    if (!pkg.isSelectable) return;
-    if (selectedPkgIds.includes(pkg.id)) {
-      setSelectedPkgIds(prev => prev.filter(id => id !== pkg.id));
+  useEffect(() => {
+    loadOrderData();
+  }, [loadOrderData]);
+
+  useEffect(() => {
+    let timer: any;
+    if (isRecording) {
+      timer = setInterval(() => setRecordSec((prev) => prev + 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isRecording]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      if (recordSec > 0) {
+        setHasVoiceNote(true);
+        setRecordedDuration(recordSec);
+      }
     } else {
-      setSelectedPkgIds(prev => [...prev, pkg.id]);
+      setRecordSec(0);
+      setIsRecording(true);
     }
   };
 
-  const toggleDetails = (pkgId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenDetailsId(prev => (prev === pkgId ? null : pkgId));
+  const toggleSelectPkg = (pkg: OrderPackageToCancel) => {
+    if (!pkg.isCancellable) return;
+    setSelectedIds((prev) =>
+      prev.includes(pkg.id) ? prev.filter((id) => id !== pkg.id) : [...prev, pkg.id]
+    );
   };
 
-  const formatAmount = (num: number) => {
-    return num.toLocaleString('en-PK');
-  };
+  const feePercent = orderMeta.daysUntilEvent > 14 ? 10 : orderMeta.daysUntilEvent >= 7 ? 50 : 100;
+  const selectedPkgs = packages.filter((p) => selectedIds.includes(p.id));
+  const totalPaidForSelected = selectedPkgs.reduce((sum, p) => sum + p.amountPaid, 0);
+  const cancellationFeeAmount = Math.round((totalPaidForSelected * feePercent) / 100);
+  const estimatedRefundAmount = Math.max(0, totalPaidForSelected - cancellationFeeAmount);
 
-  // Calculations
-  const selectedPackages = packages.filter(p => selectedPkgIds.includes(p.id));
-  const amountPaidSoFar = selectedPackages.reduce((acc, curr) => acc + curr.amountPaid, 0);
-  const cancellationFeeTotal = selectedPackages.reduce((acc, curr) => acc + curr.cancellationFee, 0);
-  const refundTotal = selectedPackages.reduce((acc, curr) => acc + curr.refundAmount, 0);
+  const canProceed = selectedIds.length > 0 && !!selectedReason;
 
-  const isFormValid = selectedPkgIds.length > 0 && selectedReason !== null;
+  const handleProceed = () => {
+    if (!canProceed) return;
 
-  const handleReviewCancellation = () => {
-    if (!isFormValid) return;
-    
-    // Store cancellation info temporarily in localStorage for summary review screen
-    localStorage.setItem('temp_cancel_details', JSON.stringify({
+    const cancelDetails = {
       orderId,
-      cancelledPkgIds: selectedPkgIds,
+      orderNumber: orderMeta.orderNumber,
       reason: selectedReason,
-      comment: reasonComment,
-      refundTotal,
-      cancellationFeeTotal,
-      amountPaidSoFar,
-      cancelledPackages: selectedPackages.map(p => ({ name: p.name, amount: p.packageAmount }))
-    }));
+      comment: commentNote,
+      hasVoiceNote,
+      recordedDuration,
+      amountPaidSoFar: totalPaidForSelected,
+      cancellationFeeTotal: cancellationFeeAmount,
+      refundTotal: estimatedRefundAmount,
+      cancelledPackages: selectedPkgs.map((p) => ({
+        id: p.id,
+        name: p.name,
+        vendor: p.vendor,
+        img: p.img,
+        amount: p.totalPrice,
+        paid: p.amountPaid,
+        deliveryDate: p.deliveryDate,
+      })),
+    };
 
+    localStorage.setItem('temp_cancel_details', JSON.stringify(cancelDetails));
     router.push(`/orders/${orderId}/cancel/summary`);
   };
-
-  if (isLoading) {
-    return (
-      <>
-      <Header />
-      <main className={styles.page}>
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
-          <p style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>Loading packages...</p>
-        </div>
-      </main>
-      <Footer />
-    </>
-    );
-  }
 
   return (
     <>
       <Header />
-      <main className={styles.page}>        <div className={styles.pageHead}>
-          <div>
-            <h2 className={styles.pageTitle}>Cancel Order</h2>
-            <p className={styles.pageSub}>Select the packages you&apos;d like to cancel and review your refund before confirming.</p>
-          </div>
-          <Link href={`/orders/${orderId}`} className={styles.backLink}>
-            <i className="bx bx-arrow-back"></i> Back to Order
-          </Link>
-        </div>
+      <div className={styles.page}>
+        <Container style={{ paddingBottom: '100px' }}>
+          <nav className={styles.breadcrumb}>
+            <Link href="/">Home</Link>
+            <span className={styles.sep}>/</span>
+            <Link href="/orders">My Orders</Link>
+            <span className={styles.sep}>/</span>
+            <Link href={`/orders/${orderId}`}>Order Details</Link>
+            <span className={styles.sep}>/</span>
+            <span className={styles.current}>Cancel Order</span>
+          </nav>
 
-        <div className={styles.layout}>
-          {/* LEFT: Selectable packages list */}
-          <div>
-            <div className={styles.warnBanner}>
-              <i className="bx bx-error-circle"></i>
-              <div>
-                <h4 className={styles.warnTitle}>This action cannot be undone</h4>
-                <p className={styles.warnBody}>Your booking will be cancelled immediately and the vendor will be notified automatically. A cancellation fee may apply depending on the package&apos;s policy.</p>
-              </div>
+          <div className={styles.pageHead}>
+            <div>
+              <h1 className={styles.pageTitle}>Cancel Order</h1>
+              <p className={styles.pageSub}>
+                Select the package(s) you wish to cancel for order {orderMeta.orderNumber}.
+              </p>
             </div>
+            <Link href={`/orders/${orderId}`} className={styles.backLink}>
+              <i className="bx bx-arrow-back"></i> Back to Order
+            </Link>
+          </div>
 
-            <div className={styles.card}>
-              <div className={styles.cardInner}>
-                <div className={styles.cardTitle}>
-                  <i className="bx bx-select-multiple"></i>Select Packages to Cancel
-                  <span className={styles.count}>
-                    {selectedPkgIds.length} of {packages.length} selected
-                  </span>
+          {isLoading && (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '36px', color: 'var(--primary)' }}></i>
+              <p style={{ marginTop: '16px', fontSize: '14px', color: 'var(--text-muted)' }}>
+                Loading cancellation options…
+              </p>
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+              <i className="bx bx-error-circle" style={{ fontSize: '40px', color: 'var(--primary)', display: 'block', marginBottom: '12px' }}></i>
+              <p>{error}</p>
+              <button
+                onClick={loadOrderData}
+                style={{
+                  marginTop: '16px',
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 24px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!isLoading && isAlreadyCancelled && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--card)', borderRadius: 'var(--radius-l)', border: '1px solid var(--border)', margin: '30px 0' }}>
+              <i className="bx bx-x-circle" style={{ fontSize: '48px', color: 'var(--primary)', display: 'block', marginBottom: '12px' }}></i>
+              <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>Order Already Cancelled</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>This order has already been cancelled. Your refund is being processed to your payment method.</p>
+              <Link href={`/orders/${orderId}/cancelled`} className={styles.proceedBtn} style={{ display: 'inline-flex', width: 'auto', padding: '12px 28px' }}>
+                View Cancellation Receipt
+              </Link>
+            </div>
+          )}
+
+          {!isLoading && !isAlreadyCancelled && !error && (
+            <TwoColumnLayout>
+              {/* LEFT COLUMN */}
+              <div>
+                {/* Warning Banner */}
+                <div className={styles.warnBanner}>
+                  <i className="bx bx-error-circle"></i>
+                  <div>
+                    <div className={styles.warnTitle}>Cancellation Policy Notice</div>
+                    <div className={styles.warnBody}>
+                      {orderMeta.daysUntilEvent > 14
+                        ? `Your event is in ${orderMeta.daysUntilEvent} days (more than 14 days lead time). You are eligible for a 90% refund of your paid amount (10% processing fee applies).`
+                        : orderMeta.daysUntilEvent >= 7
+                        ? `Your event is in ${orderMeta.daysUntilEvent} days (7 to 14 days lead time). A 50% cancellation fee applies.`
+                        : `Your event is in ${orderMeta.daysUntilEvent} days (less than 7 days lead time). Vendor preparation is committed and fees are non-refundable.`}
+                    </div>
+                  </div>
                 </div>
-                <p className={styles.cardSubtitle}>
-                  Tick the packages you want to cancel. Delivered and in-transit packages can no longer be cancelled. Use <b>View Details</b> on any package to review its items and payment schedule.
-                </p>
 
-                {packages.map((pkg) => {
-                  const isSelected = selectedPkgIds.includes(pkg.id);
-                  const isExpanded = openDetailsId === pkg.id;
+                {/* Package Selection Card */}
+                <div className={styles.card}>
+                  <div className={styles.cardInner}>
+                    <div className={styles.cardTitle}>
+                      <i className="bx bx-package"></i> Select Packages to Cancel
+                      <span className={styles.count}>
+                        {selectedIds.length} of {packages.length} selected
+                      </span>
+                    </div>
+                    <div className={styles.cardSubTitle}>
+                      Choose individual packages or select all items you want to cancel.
+                    </div>
 
-                  return (
-                    <div
-                      key={pkg.id}
-                      className={`${styles.cpkg} ${pkg.isSelectable ? styles.selectable : styles.restricted} ${
-                        isSelected ? styles.selected : ''
-                      }`}
-                      onClick={() => togglePackage(pkg)}
-                    >
-                      {pkg.isSelectable ? (
-                        <span className={styles.cpkgBox}>
-                          <i className="bx bx-check"></i>
+                    <div>
+                      {packages.map((pkg) => {
+                        const isSelected = selectedIds.includes(pkg.id);
+                        const cpkgClass = `${styles.cpkg} ${
+                          pkg.isCancellable ? styles.selectable : styles.restricted
+                        } ${isSelected ? styles.selected : ''}`;
+
+                        return (
+                          <div
+                            key={String(pkg.id)}
+                            className={cpkgClass}
+                            onClick={() => toggleSelectPkg(pkg)}
+                          >
+                            {pkg.isCancellable ? (
+                              <div className={styles.cpkgBox}>
+                                <i className="bx bx-check"></i>
+                              </div>
+                            ) : (
+                              <div className={styles.cpkgLock}>
+                                <i className="bx bx-lock-alt"></i>
+                              </div>
+                            )}
+
+                            <div className={styles.cpkgBody}>
+                              <div className={styles.ciHeader}>
+                                {pkg.img ? (
+                                  <img src={pkg.img} alt={pkg.name} className={styles.ciImg} />
+                                ) : (
+                                  <div className={styles.ciImg} />
+                                )}
+
+                                <div className={styles.ciHeadInfo}>
+                                  <div className={styles.ciHeadTop}>
+                                    <div>
+                                      <div className={styles.ciName}>{pkg.name}</div>
+                                      <div className={styles.ciVendor}>{pkg.vendor}</div>
+                                    </div>
+                                    <div className={styles.ciBadges}>
+                                      <span className={`${styles.ciStatus} ${styles[pkg.statusClass]}`}>
+                                        {pkg.status}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className={styles.ciPriceRow}>
+                                    <div className={styles.ciPr}>
+                                      <span className={styles.ciPrLbl}>Paid Amount</span>
+                                      <span className={`${styles.ciPrVal} ${styles.green}`}>
+                                        {formatPrice(pkg.amountPaid)}
+                                      </span>
+                                    </div>
+                                    {pkg.futureAmount > 0 && (
+                                      <div className={styles.ciPr}>
+                                        <span className={styles.ciPrLbl}>Future Due (Waived)</span>
+                                        <span className={styles.ciPrVal}>
+                                          {formatPrice(pkg.futureAmount)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className={styles.ciPr}>
+                                      <span className={styles.ciPrLbl}>Event Date</span>
+                                      <span className={styles.ciPrVal}>{pkg.deliveryDate}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {!pkg.isCancellable && pkg.restrictionReason && (
+                                <div className={styles.cpkgRestrictNote}>
+                                  <i className="bx bx-info-circle"></i> {pkg.restrictionReason}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reason Selection Card */}
+                <div className={styles.card}>
+                  <div className={styles.cardInner}>
+                    <div className={styles.cardTitle}>
+                      <i className="bx bx-help-circle"></i> Why are you cancelling?
+                    </div>
+                    <div className={styles.cardSubTitle}>
+                      Please select a reason to help us improve our vendor services.
+                    </div>
+
+                    <div className={styles.reasonsList}>
+                      {REASONS.map((r, idx) => {
+                        const isSel = selectedReason === r;
+                        const reasonClass = `${styles.reasonItem} ${isSel ? styles.selected : ''}`;
+                        return (
+                          <div
+                            key={idx}
+                            className={reasonClass}
+                            onClick={() => setSelectedReason(r)}
+                          >
+                            <div className={styles.reasonRadio}>
+                              {isSel && <div className={styles.reasonRadioDot} />}
+                            </div>
+                            <span className={styles.reasonText}>{r}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Note & Voice Area */}
+                    <textarea
+                      className={styles.commentBox}
+                      placeholder="Add an optional comment or explanation for your cancellation..."
+                      value={commentNote}
+                      onChange={(e) => setCommentNote(e.target.value)}
+                    />
+
+                    <div className={styles.voiceBar}>
+                      <button
+                        type="button"
+                        className={`${styles.voiceBtn} ${isRecording ? styles.recording : ''}`}
+                        onClick={toggleRecording}
+                      >
+                        <i className={`bx ${isRecording ? 'bx-stop-circle' : 'bx-microphone'}`}></i>
+                        {isRecording ? `Stop Recording (${recordSec}s)` : 'Record Voice Note'}
+                      </button>
+                      <span className={styles.voiceStatus}>
+                        {isRecording
+                          ? 'Recording live audio feedback… Click to finish'
+                          : hasVoiceNote
+                          ? `Voice note recorded (${recordedDuration}s)`
+                          : 'Optional audio feedback for support team'}
+                      </span>
+                    </div>
+
+                    {hasVoiceNote && (
+                      <div className={styles.policyNote} style={{ marginTop: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <i className="bx bx-microphone" style={{ fontSize: '18px', color: 'var(--primary)' }}></i>
+                          <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            Voice Note Attached ({recordedDuration}s)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={togglePlayAudio}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              background: isPlayingAudio ? 'var(--primary)' : 'var(--card)',
+                              color: isPlayingAudio ? '#fff' : 'var(--primary)',
+                              border: '1px solid var(--primary)',
+                              borderRadius: 'var(--radius-full)',
+                              padding: '3px 10px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              marginLeft: '6px',
+                            }}
+                          >
+                            <i className={`bx ${isPlayingAudio ? 'bx-pause' : 'bx-play'}`} style={{ fontSize: '15px' }}></i>
+                            {isPlayingAudio ? 'Playing…' : 'Play Audio'}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHasVoiceNote(false);
+                            setRecordedDuration(0);
+                            setRecordSec(0);
+                            setIsPlayingAudio(false);
+                          }}
+                          style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT SIDEBAR */}
+              <aside>
+                <div className={styles.sidebarSticky}>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.sidebarHead}>
+                      <div className={styles.shEyebrow}>Cancellation Summary</div>
+                      <div className={styles.shTitle}>{orderMeta.orderNumber}</div>
+                      <div className={styles.shSub}>
+                        {selectedIds.length} of {packages.length} package{packages.length !== 1 ? 's' : ''} selected
+                      </div>
+                    </div>
+
+                    <div className={styles.sumBody}>
+                      <div className={styles.sumRow}>
+                        <span>Selected Items Paid</span>
+                        <span className={styles.sumRowVal}>{formatPrice(totalPaidForSelected)}</span>
+                      </div>
+
+                      <div className={styles.sumRow}>
+                        <span>Cancellation Fee ({feePercent}%)</span>
+                        <span className={`${styles.sumRowVal} ${styles.amber}`}>
+                          - {formatPrice(cancellationFeeAmount)}
                         </span>
-                      ) : (
-                        <span className={styles.cpkgLock}>
-                          <i className="bx bx-lock-alt"></i>
+                      </div>
+
+                      <div className={`${styles.sumRow} ${styles.total}`}>
+                        <span>Estimated Refund</span>
+                        <span className={`${styles.sumRowVal} ${styles.green}`}>
+                          {formatPrice(estimatedRefundAmount)}
                         </span>
+                      </div>
+
+                      <div className={styles.policyNote}>
+                        <i className="bx bx-time-five"></i>
+                        <div>
+                          Refund credited to your original payment method within <b>3–5 business days</b>.{' '}
+                          <Link href="/cancellation-policy">View cancellation policy</Link>
+                        </div>
+                      </div>
+
+                      {!selectedReason && (
+                        <div className={styles.needReason} style={{ marginTop: '12px' }}>
+                          <i className="bx bx-error-circle"></i>
+                          <span>Please select a cancellation reason above to continue.</span>
+                        </div>
                       )}
 
-                      <div className={styles.cpkgBody}>
-                        <div className={styles.ciHeader}>
-                          <img className={styles.ciImg} src={pkg.img} alt={pkg.name} />
-                          <div className={styles.ciHeadInfo}>
-                            <div className={styles.ciHeadTop}>
-                              <div>
-                                <h4 className={styles.ciName}>{pkg.name}</h4>
-                                <div className={styles.ciVendor}>
-                                  <i className="bx bx-store"></i> {pkg.vendor}
-                                </div>
-                              </div>
-                              <div className={styles.ciBadges}>
-                                <span className={`${styles.ciStatus} ${styles[pkg.statusClass]}`}>
-                                  {pkg.statusLabel}
-                                </span>
-                              </div>
-                            </div>
-                            <div className={styles.ciMetaRow}>
-                              <span className={styles.ciMeta}><i className="bx bx-group"></i>{pkg.metaGuests}</span>
-                              <span className={styles.ciMeta}><i className="bx bx-box"></i>{pkg.metaItems}</span>
-                            </div>
-                            <div className={styles.ciDd}>
-                              <span className={styles.ciDdText}>
-                                <i className="bx bxs-truck"></i>
-                                {pkg.status === 'delivered' ? `Delivered: ${pkg.deliveryDate}` : `Delivery: ${pkg.deliveryDate}`}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                      <button
+                        type="button"
+                        className={styles.proceedBtn}
+                        style={{ marginTop: '14px' }}
+                        disabled={!canProceed}
+                        onClick={handleProceed}
+                      >
+                        Proceed to Summary <i className="bx bx-right-arrow-alt"></i>
+                      </button>
+                    </div>
+                  </div>
 
-                        {pkg.isSelectable ? (
-                          <div className={styles.ciPriceRow}>
-                            <div className={styles.ciPr}>
-                              <span className={styles.ciPrLbl}>Package Amount</span>
-                              <span className={styles.ciPrVal}>PKR {formatAmount(pkg.packageAmount)}</span>
-                            </div>
-                            <div className={styles.ciPr}>
-                              <span className={styles.ciPrLbl}>Amount Paid ({pkg.paidPercent}%)</span>
-                              <span className={styles.ciPrVal}>PKR {formatAmount(pkg.amountPaid)}</span>
-                            </div>
-                            <div className={styles.ciPr}>
-                              <span className={styles.ciPrLbl}>Cancellation Fee ({pkg.feeTier})</span>
-                              <span className={`${styles.ciPrVal} ${styles.amber}`}>
-                                − PKR {formatAmount(pkg.cancellationFee)}
-                              </span>
-                            </div>
-                            <div className={styles.ciPr}>
-                              <span className={styles.ciPrLbl}>Refund for this Package</span>
-                              <span className={`${styles.ciPrVal} ${styles.red}`}>
-                                PKR {formatAmount(pkg.refundAmount)}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className={styles.cpkgRestrictNote}>
-                            <i className="bx bx-info-circle"></i>
-                            {pkg.restrictReason}
+                  <div className={`${styles.orderAmtBlock} ${isOrderAmtOpen ? styles.open : ''}`}>
+                    <button
+                      type="button"
+                      className={styles.oaHead}
+                      onClick={() => setIsOrderAmtOpen(!isOrderAmtOpen)}
+                    >
+                      <div>
+                        <div className={styles.oaLbl}>Order Total</div>
+                        <div className={styles.oaNote}>
+                          At time of order · {packages.length} package{packages.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      <div className={styles.oaHeadRight}>
+                        <span className={styles.oaTotal}>{formatPrice(orderMeta.orderTotal)}</span>
+                        <i className={`bx bx-chevron-down ${styles.oaChev}`}></i>
+                      </div>
+                    </button>
+
+                    <div className={styles.oaBody}>
+                      <div className={styles.oaInner}>
+                        <div className={styles.oaRow}>
+                          Packages ({packages.length})<span>{formatPrice(orderMeta.packagesTotal)}</span>
+                        </div>
+                        {orderMeta.shippingTotal > 0 && (
+                          <div className={styles.oaRow}>
+                            Shipping<span>{formatPrice(orderMeta.shippingTotal)}</span>
                           </div>
                         )}
-
-                        <button
-                          className={`${styles.viewDetails} ${isExpanded ? styles.open : ''}`}
-                          onClick={(e) => toggleDetails(pkg.id, e)}
-                        >
-                          <i className="bx bx-list-ul"></i>View Details
-                          <i className={`bx bx-chevron-down ${styles.chev}`}></i>
-                        </button>
-
-                        <div
-                          className={`${styles.detailsPanel} ${isExpanded ? styles.open : ''}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className={styles.detailsInner}>
-                            <div className={styles.detailsSec}>
-                              <div className={styles.detailsSecTitle}>
-                                <i className="bx bx-box"></i>Items in this Package
-                              </div>
-                              <div className={styles.dcCarousel}>
-                                {pkg.items.map((item, itemIdx) => (
-                                  <div key={itemIdx} className={styles.dcPc}>
-                                    <img src={item.img} alt={item.name} />
-                                    <div className={styles.dcPcName}>{item.name}</div>
-                                    <div className={styles.dcPcVar}>{item.variation}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className={styles.detailsSec}>
-                              <div className={styles.detailsSecTitle}>
-                                <i className="bx bx-calendar-check"></i>Payment Schedule
-                              </div>
-                              {pkg.schedule.map((sch, schIdx) => (
-                                <div key={schIdx} className={styles.inst}>
-                                  <div className={styles.instG}>
-                                    <div className={`${styles.instDot} ${styles[sch.status]}`}></div>
-                                    {schIdx < pkg.schedule.length - 1 && (
-                                      <div className={styles.instConn}></div>
-                                    )}
-                                  </div>
-                                  <div className={styles.instBody}>
-                                    <div>
-                                      <div className={styles.instLabel}>{sch.label}</div>
-                                      <div className={styles.instDate}>{sch.date}</div>
-                                    </div>
-                                    <div className={`${styles.instAmt} ${sch.status === 'paid' || sch.status === 'full' ? styles.green : styles.red}`}>
-                                      PKR {formatAmount(sch.amount)}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className={styles.detailsTotal}>
-                                <span>Package Total</span>
-                                <b>PKR {formatAmount(pkg.packageAmount)}</b>
-                              </div>
-                            </div>
+                        {orderMeta.taxesTotal > 0 && (
+                          <div className={styles.oaRow}>
+                            Taxes &amp; Fees<span>{formatPrice(orderMeta.taxesTotal)}</span>
                           </div>
+                        )}
+                        <hr className={styles.oaDashed} />
+                        <div className={`${styles.oaRow} ${styles.total}`}>
+                          Order Total<span>{formatPrice(orderMeta.orderTotal)}</span>
+                        </div>
+                        <div className={`${styles.oaRow} ${styles.sub}`}>
+                          Paid at Checkout<span>{formatPrice(orderMeta.paidAtCheckout)}</span>
+                        </div>
+                        <div className={`${styles.oaRow} ${styles.sub}`}>
+                          Future Payments<span>{formatPrice(orderMeta.futurePayments)}</span>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT: Refund calculations sidebar panel */}
-          <aside>
-            <div className={styles.sidebarSticky}>
-              <div className={styles.bookingCard}>
-                <div className={styles.sidebarHead}>
-                  <div className={styles.shTop}>
-                    <span className={styles.shEyebrow}>Cancellation</span>
-                    <span className={styles.shStatus}>
-                      <i className="bx bx-x-circle"></i>Cancelling
-                    </span>
-                  </div>
-                  <h3 className={styles.shTitle}>#{orderId}</h3>
-                  <div className={styles.shOrderdate}>
-                    <i className="bx bx-calendar"></i>Ordered 10 March 2025
-                  </div>
-                  <div className={styles.shSub}>Event · March 15, 2025</div>
-                </div>
-
-                {/* Refund breakdown section */}
-                <div className={styles.refundBlock}>
-                  <h4 className={styles.refundTitle}>
-                    <i className="bx bx-wallet"></i>Your Refund
-                  </h4>
-                  {selectedPkgIds.length > 0 ? (
-                    <div>
-                      <div className={styles.refundRow}>
-                        Paid so far <span className={styles.v}>PKR {formatAmount(amountPaidSoFar)}</span>
-                      </div>
-                      <div className={styles.refundRow}>
-                        Cancellation fee (10%){' '}
-                        <span className={`${styles.v} ${styles.fee}`}>
-                          − PKR {formatAmount(cancellationFeeTotal)}
-                        </span>
-                      </div>
-                      <hr className={styles.refundDashed} />
-                      <div className={styles.refundTotal}>
-                        <span className={styles.refundTotalLbl}>Total Refund</span>
-                        <span className={styles.refundTotalVal}>
-                          PKR {formatAmount(refundTotal)}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.refundEmpty}>
-                      Select at least one package to see your refund.
-                    </div>
-                  )}
-                </div>
-
-                {/* Policy note */}
-                <div className={styles.policyNote}>
-                  <i className="bx bx-time-five"></i>
-                  <div className={styles.policyNoteTxt}>
-                    Refund credited to your original payment method within <b>3–5 business days</b>. <Link href="/orders/cancellation-policy">View cancellation policy</Link>
                   </div>
                 </div>
-
-                {/* Action button triggers */}
-                <div className={styles.actionsBlock}>
-                  {selectedPkgIds.length > 0 && !selectedReason && (
-                    <div className={`${styles.needReason} ${styles.show}`}>
-                      <i className="bx bx-error-circle"></i>
-                      Please select a cancellation reason below to continue.
-                    </div>
-                  )}
-                  <button
-                    disabled={!isFormValid}
-                    className={styles.btnDanger}
-                    onClick={handleReviewCancellation}
-                  >
-                    {selectedPkgIds.length === 0 ? (
-                      <>
-                        <i className="bx bx-select-multiple"></i>Select a package
-                      </>
-                    ) : !selectedReason ? (
-                      <>
-                        <i className="bx bx-message-square-detail"></i>Select a reason
-                      </>
-                    ) : (
-                      <>
-                        <i className="bx bx-right-arrow-alt"></i>Review Cancellation ({selectedPkgIds.length})
-                      </>
-                    )}
-                  </button>
-                  <Link href={`/orders/${orderId}`} className={styles.btnOutline}>
-                    Keep Order
-                  </Link>
-                </div>
-                <div className={styles.undoneNote}>
-                  <i className="bx bx-lock-alt"></i>You&apos;ll review everything before it&apos;s final
-                </div>
-              </div>
-
-              {/* Order total amount breakdowns */}
-              <div className={`${styles.orderAmtBlock} ${isOrderAmtOpen ? styles.open : ''}`}>
-                <button
-                  className={styles.oaHead}
-                  onClick={() => setIsOrderAmtOpen(!isOrderAmtOpen)}
-                >
-                  <div>
-                    <div className={styles.oaLbl}>Order Total</div>
-                    <div className={styles.oaNote}>At time of order · 5 packages</div>
-                  </div>
-                  <div className={styles.oaHeadRight}>
-                    <span className={styles.oaTotal}>PKR 4,25,125</span>
-                    <i className="bx bx-chevron-down oaChev"></i>
-                  </div>
-                </button>
-                <div className={styles.oaBody}>
-                  <div className={styles.oaInner}>
-                    <div className={styles.oaRow}>
-                      Packages (5)<span>PKR 3,84,750</span>
-                    </div>
-                    <div className={styles.oaRow}>
-                      Shipping<span>PKR 15,000</span>
-                    </div>
-                    <div className={styles.oaRow}>
-                      Taxes &amp; Fees<span>PKR 25,375</span>
-                    </div>
-                    <hr className={styles.oaDashed} />
-                    <div className={`${styles.oaRow} ${styles.total}`}>
-                      Order Total<span>PKR 4,25,125</span>
-                    </div>
-                    <div className={`${styles.oaRow} ${styles.sub}`}>
-                      Paid at Checkout<span>PKR 2,29,300</span>
-                    </div>
-                    <div className={`${styles.oaRow} ${styles.sub}`}>
-                      Future Payments<span>PKR 1,95,825</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cancellation Reason selection card */}
-              <div className={styles.bookingCard} style={{ marginTop: '16px' }}>
-                <div className={styles.cardInner}>
-                  <div className={styles.cardTitle}>
-                    <i className="bx bx-message-square-detail"></i>Why are you cancelling?{' '}
-                    <span style={{ color: 'var(--primary)' }}>*</span>
-                  </div>
-                  <p className={styles.cardSubtitle} style={{ marginBottom: '12px' }}>
-                    A reason is required to continue. Your feedback helps us improve.
-                  </p>
-                  
-                  <div>
-                    {REASONS.map((r, rIdx) => {
-                      const isSel = selectedReason === r;
-                      return (
-                        <div
-                          key={rIdx}
-                          className={`${styles.reasonRow} ${isSel ? styles.sel : ''}`}
-                          onClick={() => setSelectedReason(r)}
-                        >
-                          <span className={styles.reasonRadio}></span>
-                          <span className={styles.reasonLabel}>{r}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className={styles.reasonCommentLbl}>Tell us more (optional)</div>
-                  <div className={styles.reasonTextareaWrap}>
-                    <textarea
-                      className={styles.reasonTextarea}
-                      maxLength={200}
-                      placeholder="Share any specific reason..."
-                      value={reasonComment}
-                      onChange={(e) => setReasonComment(e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.reasonFoot}>
-                    <span className={styles.reasonCount}>
-                      {reasonComment.length} / 200
-                    </span>
-                    <button className={styles.reasonMic} title="Record a voice note">
-                      <i className="bx bx-microphone"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>      </main>
+              </aside>
+            </TwoColumnLayout>
+          )}
+        </Container>
+      </div>
       <Footer />
     </>
   );

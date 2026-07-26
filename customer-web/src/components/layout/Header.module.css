@@ -17,7 +17,9 @@
   padding: 0 40px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .logo {
@@ -49,7 +51,7 @@
 
 .headerSearch {
   flex: 1;
-  max-width: 320px;
+  max-width: 200px;
   height: 38px;
   background: var(--input-bg);
   border-radius: var(--radius-full);
@@ -89,13 +91,13 @@
 .headerNav {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0px;
 }
 
 .navLink {
-  padding: 7px 12px;
+  padding: 6px 9px;
   border-radius: var(--radius-s);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
