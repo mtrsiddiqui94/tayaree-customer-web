@@ -1112,21 +1112,47 @@
   font-weight: 600;
   color: var(--success);
 }
+
+.calHighlight {
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-m);
+  background: var(--primary-light);
+  border: 1px solid rgba(215, 25, 33, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+.calHighlight:hover {
+  background: rgba(215, 25, 33, 0.14);
+}
+.calHighlight i {
+  font-size: 17px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
 .calNav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  padding: 0 4px;
 }
 .calMonthLbl {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.2px;
   color: var(--text-primary);
 }
 .calNavBtn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--card);
@@ -1136,15 +1162,17 @@
   justify-content: center;
   font-size: 14px;
   color: var(--text-secondary);
+  transition: 0.15s;
 }
 .calNavBtn:hover {
   border-color: var(--primary);
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
 }
 .calGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
+  gap: 2px;
 }
 .calLbl {
   font-size: 10px;
@@ -1152,45 +1180,93 @@
   color: var(--text-muted);
   text-align: center;
   padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .calD {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  min-height: 48px;
+  gap: 1px;
+  min-height: 46px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
-  border-radius: 6px;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
   cursor: pointer;
-  transition: .12s;
+  transition: 0.12s ease;
   color: var(--text-primary);
+  user-select: none;
+}
+.calDateNum {
+  line-height: 1.2;
 }
 .calDatePrice {
-  font-size: 9px;
+  font-size: 7px;
   font-weight: 600;
-  opacity: 0.8;
+  opacity: 0.85;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -0.3px;
+}
+.calDatePriceLow {
+  color: var(--success) !important;
+  font-weight: 700;
+  opacity: 1;
 }
 .calDSel .calDatePrice {
   opacity: 0.95;
+  color: #fff !important;
+}
+.calDToday {
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
 }
 .calD:hover:not(.calDSel):not(.calDNa) {
-  background: var(--input-bg);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 .calDOther {
-  color: var(--border) !important;
+  color: var(--text-muted) !important;
+  opacity: 0.35;
 }
 .calDSel {
   background: var(--primary) !important;
   color: #fff !important;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(215, 25, 33, 0.35);
 }
 .calDNa {
-  color: var(--border) !important;
-  cursor: default !important;
+  color: var(--text-muted) !important;
+  opacity: 0.35;
+  cursor: not-allowed !important;
   text-decoration: line-through;
+}
+
+.calLegend {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 10px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.calLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+.calLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 /* Fitting slot picker */

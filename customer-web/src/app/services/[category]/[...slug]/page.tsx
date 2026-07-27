@@ -178,6 +178,40 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
 
+  const normalizeDateStr = (dateInput: string | Date): string => {
+    if (!dateInput) return '';
+    if (dateInput instanceof Date) {
+      const y = dateInput.getFullYear();
+      const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+      const d = String(dateInput.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const str = String(dateInput).trim();
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        let m = parts[0].padStart(2, '0');
+        let d = parts[1].padStart(2, '0');
+        let y = parts[2];
+        if (y.length === 2) y = `20${y}`;
+        if (parts[0].length === 4) {
+          y = parts[0];
+          m = parts[1].padStart(2, '0');
+          d = parts[2].padStart(2, '0');
+        }
+        return `${y}-${m}-${d}`;
+      }
+    }
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, '0');
+      const d = String(parsed.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    return str;
+  };
+
   const formatPrice = (val: any) => {
     if (val === undefined || val === null || val === '') return 'unset';
     const valStr = val.toString().trim();
@@ -198,23 +232,20 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
   const formatCompactPrice = (priceVal: any) => {
     if (priceVal === undefined || priceVal === null || priceVal === '') return '';
-    const num = parseFloat(priceVal.toString().replace(/[^0-9.]/g, ''));
-    if (isNaN(num)) return '';
-    if (num >= 1000) {
-      return `${(num / 1000).toFixed(0)}k`;
-    }
-    return String(num);
+    const str = priceVal.toString().trim();
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return str;
+    return `PKR ${num.toLocaleString('en-US')}`;
   };
-
-
 
   const getFittingDateString = () => {
     if (!selectedDate) return 'Select event date first';
-    const parts = selectedDate.split('/');
+    const norm = normalizeDateStr(selectedDate);
+    const parts = norm.split('-');
     if (parts.length === 3) {
-      const month = parseInt(parts[0], 10) - 1;
-      const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
       const eventDate = new Date(year, month, day);
       if (!isNaN(eventDate.getTime())) {
         const fitDate = new Date(eventDate);
@@ -259,19 +290,22 @@ export default function ServiceDetailPage({ params }: PageProps) {
       );
       if (res.status && res.data) {
         const slots: CalendarSlot[] = res.data.map((c) => ({
-          calendarDate: c.calendar_date,
-          info3Label: c.info3_label,
+          calendarDate: normalizeDateStr(c.calendar_date || c.calendarDate),
+          info3Label: c.info3_label || '',
           price: c.price !== undefined && c.price !== null ? String(c.price) : '0',
-          priceId: c.price_id,
+          priceId: c.price_id || c.priceId,
           isAvailable: c.is_available === 1 || c.is_available === true || String(c.is_available) === '1',
         }));
         setCalendarSlots(slots);
-        // Default to first available date
+        // Default to first available date matching Flutter initState
         const avail = slots.find((s) => s.isAvailable);
         if (avail) {
           setSelectedDate(avail.calendarDate);
           setSelectedPriceId(avail.priceId);
-          setCurrentMonth(new Date(avail.calendarDate));
+          const parsed = new Date(avail.calendarDate);
+          if (!isNaN(parsed.getTime())) {
+            setCurrentMonth(parsed);
+          }
         }
       }
     } catch (e) {
@@ -943,35 +977,29 @@ export default function ServiceDetailPage({ params }: PageProps) {
   };
 
   const findCalendarSlot = (d: Date) => {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    return calendarSlots.find(slot => slot.calendarDate === dateStr);
+    const norm = normalizeDateStr(d);
+    return calendarSlots.find(slot => normalizeDateStr(slot.calendarDate) === norm);
   };
 
   const formatDisplayDate = (dStr: string) => {
     if (!dStr) return 'Select Date';
-    let normalized = dStr;
-    if (dStr.includes('/')) {
-      const parts = dStr.split('/');
-      normalized = `${parts[2]}-${parts[0]}-${parts[1]}`;
+    const norm = normalizeDateStr(dStr);
+    const parts = norm.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      if (months[month]) {
+        return `${day} ${months[month]} ${year}`;
+      }
     }
-    const d = new Date(normalized);
-    if (isNaN(d.getTime())) return dStr;
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    return dStr;
   };
 
   const isDateSelected = (d: Date) => {
     if (!selectedDate) return false;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    
-    let normalizedSelected = selectedDate;
-    if (selectedDate.includes('/')) {
-      const parts = selectedDate.split('/');
-      normalizedSelected = `${parts[2]}-${parts[0]}-${parts[1]}`;
-    }
-    return dateStr === normalizedSelected;
+    return normalizeDateStr(d) === normalizeDateStr(selectedDate);
   };
 
   const getCategoryIcon = (cat: string) => {
@@ -1813,63 +1841,137 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   )}
 
                   {/* Event Date inline interactive Calendar */}
-                  {detail.detailConfig.isShowCalendar && (
-                    <div>
-                      <span className={styles.fieldLabel}>Event date</span>
-                      <div className={styles.calTop}>
-                        <span className={styles.calDateSel}>{formatDisplayDate(selectedDate)}</span>
-                        <span className={styles.calAvail}>
-                          <i className="bx bx-check-circle"></i>Available
-                        </span>
-                      </div>
-                      <div className={styles.calNav}>
-                        <button type="button" className={styles.calNavBtn} onClick={handlePrevMonth}>
-                          ‹
-                        </button>
-                        <span className={styles.calMonthLbl}>
-                          {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                        </span>
-                        <button type="button" className={styles.calNavBtn} onClick={handleNextMonth}>
-                          ›
-                        </button>
-                      </div>
-                      <div className={styles.calGrid}>
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((lbl, idx) => (
-                          <div key={idx} className={styles.calLbl}>
-                            {lbl}
+                  {detail.detailConfig.isShowCalendar && (() => {
+                    const today0 = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+                    const availableSlots = calendarSlots.filter(s => s.isAvailable && parseFloat(s.price) > 0);
+                    const futureSlots = availableSlots.filter(s => {
+                      const d = new Date(s.calendarDate).getTime();
+                      return d >= today0;
+                    });
+                    const averagePrice = futureSlots.length > 0
+                      ? futureSlots.reduce((acc, curr) => acc + parseFloat(curr.price), 0) / futureSlots.length
+                      : null;
+
+                    const selectedPriceVal = (() => {
+                      if (!selectedDate) return null;
+                      const s = findCalendarSlot(new Date(selectedDate));
+                      return s && s.price ? parseFloat(s.price) : null;
+                    })();
+
+                    // Find lowest rate candidate
+                    let lowestSlot: CalendarSlot | null = null;
+                    if (futureSlots.length > 0) {
+                      const candidates = futureSlots.filter(s => {
+                        if (selectedDate && normalizeDateStr(s.calendarDate) === normalizeDateStr(selectedDate)) return false;
+                        if (selectedPriceVal !== null && parseFloat(s.price) >= selectedPriceVal) return false;
+                        return true;
+                      });
+                      if (candidates.length > 0) {
+                        lowestSlot = candidates.reduce((prev, curr) => parseFloat(curr.price) < parseFloat(prev.price) ? curr : prev);
+                      }
+                    }
+
+                    return (
+                      <div>
+                        <span className={styles.fieldLabel}>Event date</span>
+                        <div className={styles.calTop}>
+                          <span className={styles.calDateSel}>{formatDisplayDate(selectedDate)}</span>
+                          <span className={styles.calAvail}>
+                            <i className="bx bx-check-circle"></i>Available
+                          </span>
+                        </div>
+
+                        {/* Smart Rate Callout Banner */}
+                        {lowestSlot && (
+                          <div
+                            className={styles.calHighlight}
+                            onClick={() => {
+                              if (lowestSlot) {
+                                setSelectedDate(lowestSlot.calendarDate);
+                                setSelectedPriceId(lowestSlot.priceId);
+                                const parsed = new Date(lowestSlot.calendarDate);
+                                if (!isNaN(parsed.getTime())) setCurrentMonth(parsed);
+                              }
+                            }}
+                          >
+                            <i className="bx bx-bulb"></i>
+                            <span>
+                              Lowest rate PKR {formatPrice(lowestSlot.price).replace('PKR ', '')} on {formatDisplayDate(lowestSlot.calendarDate)} · Tap to pick
+                            </span>
                           </div>
-                        ))}
-                        {getDaysInMonthGrid(currentMonth).map((day) => {
-                          const slot = findCalendarSlot(day.date);
-                          const isPast = day.date.getTime() < new Date(new Date().setHours(0, 0, 0, 0)).getTime();
-                          const isAvailable = !isPast && (slot ? slot.isAvailable : true);
-                          const isSelected = isDateSelected(day.date);
-                          
-                          return (
-                            <div
-                              key={day.key}
-                              onClick={() => {
-                                if (isAvailable) {
-                                  const pad = (n: number) => String(n).padStart(2, '0');
-                                  const formattedStr = `${pad(day.date.getMonth() + 1)}/${pad(day.date.getDate())}/${day.date.getFullYear()}`;
-                                  setSelectedDate(formattedStr);
-                                  if (slot) setSelectedPriceId(slot.priceId);
-                                }
-                              }}
-                              className={`${styles.calD} ${day.isCurrentMonth ? '' : styles.calDOther} ${isSelected ? styles.calDSel : ''} ${isAvailable ? '' : styles.calDNa}`}
-                            >
-                              <span className={styles.calDateNum}>{day.date.getDate()}</span>
-                              {slot && isAvailable && slot.price && (
-                                <span className={styles.calDatePrice}>
-                                  {formatCompactPrice(slot.price)}
-                                </span>
-                              )}
+                        )}
+
+                        <div className={styles.calNav}>
+                          <button type="button" className={styles.calNavBtn} onClick={handlePrevMonth}>
+                            ‹
+                          </button>
+                          <span className={styles.calMonthLbl}>
+                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                          </span>
+                          <button type="button" className={styles.calNavBtn} onClick={handleNextMonth}>
+                            ›
+                          </button>
+                        </div>
+
+                        <div className={styles.calGrid}>
+                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((lbl, idx) => (
+                            <div key={idx} className={styles.calLbl}>
+                              {lbl}
                             </div>
-                          );
-                        })}
+                          ))}
+                          {getDaysInMonthGrid(currentMonth).map((day) => {
+                            const slot = findCalendarSlot(day.date);
+                            const isPast = day.date.getTime() < today0;
+                            const isAvailable = !isPast && (calendarSlots.length > 0 ? (slot ? slot.isAvailable : false) : true);
+                            const isSelected = isDateSelected(day.date);
+                            const isToday = normalizeDateStr(day.date) === normalizeDateStr(new Date());
+                            const isLowPrice = slot && averagePrice !== null && parseFloat(slot.price) <= averagePrice && !isSelected && !isPast;
+
+                            return (
+                              <div
+                                key={day.key}
+                                onClick={() => {
+                                  if (isAvailable) {
+                                    const normStr = normalizeDateStr(day.date);
+                                    setSelectedDate(normStr);
+                                    if (slot) setSelectedPriceId(slot.priceId);
+                                  }
+                                }}
+                                className={`${styles.calD} ${day.isCurrentMonth ? '' : styles.calDOther} ${isSelected ? styles.calDSel : ''} ${isToday && !isSelected ? styles.calDToday : ''} ${isAvailable ? '' : styles.calDNa}`}
+                              >
+                                <span className={styles.calDateNum}>{day.date.getDate()}</span>
+                                {slot && isAvailable && slot.price && (
+                                  <span className={`${styles.calDatePrice} ${isLowPrice ? styles.calDatePriceLow : ''}`}>
+                                    {formatCompactPrice(slot.price)}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Calendar Legend Bar */}
+                        <div className={styles.calLegend}>
+                          <div className={styles.calLegendItem}>
+                            <span className={styles.calLegendDot} style={{ background: 'var(--primary)' }}></span>
+                            <span>Selected</span>
+                          </div>
+                          <div className={styles.calLegendItem}>
+                            <span className={styles.calLegendDot} style={{ background: 'var(--border)', border: '1px solid var(--text-muted)' }}></span>
+                            <span>Today</span>
+                          </div>
+                          <div className={styles.calLegendItem}>
+                            <span className={styles.calLegendDot} style={{ background: 'var(--success)' }}></span>
+                            <span>Low price</span>
+                          </div>
+                          <div className={styles.calLegendItem}>
+                            <span className={styles.calLegendDot} style={{ background: 'var(--text-muted)', opacity: 0.4 }}></span>
+                            <span>Unavailable</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Fitting slots indicator */}
                   {category === 'clothing' && detail.detailConfig.isShowQuantity && (
@@ -1997,15 +2099,36 @@ export default function ServiceDetailPage({ params }: PageProps) {
                     onClick={handleBookingSubmit}
                     className={styles.btnPrimary}
                   >
-                    <i className="bx bx-cart-add"></i>Add to cart · {(() => {
+                    <i className="bx bx-cart-add"></i>Add to cart{(() => {
                       const payTodayRow = priceRows.find(r => {
-                        const lbl = r.labelInfo.toLowerCase();
+                        const lbl = (r.labelInfo || '').toLowerCase();
                         return lbl.includes('amount due today') || lbl.includes('due today') || lbl.includes('today') || lbl.includes('pay today') || lbl.includes('deposit');
                       });
                       if (payTodayRow) {
-                        return formatBreakdownValue(payTodayRow.labelInfo, payTodayRow.labelValue);
+                        const val = formatBreakdownValue(payTodayRow.labelInfo, payTodayRow.labelValue);
+                        if (val && val !== 'unset') return ` · ${val}`;
                       }
-                      return formatPrice(detail.finalPrice);
+
+                      const totalRow = priceRows.find(r => isBoldRow(r.labelInfo) && !r.labelInfo.toLowerCase().includes('deposit') && !r.labelInfo.toLowerCase().includes('installment') && !r.labelInfo.toLowerCase().includes('remaining'));
+                      if (totalRow) {
+                        const val = formatBreakdownValue(totalRow.labelInfo, totalRow.labelValue);
+                        if (val && val !== 'unset') return ` · ${val}`;
+                      }
+
+                      if (selectedDate) {
+                        const slot = findCalendarSlot(selectedDate);
+                        if (slot && slot.price) {
+                          const val = formatPrice(slot.price);
+                          if (val && val !== 'unset') return ` · ${val}`;
+                        }
+                      }
+
+                      const fallback = formatPrice(detail.finalPrice || detail.price);
+                      if (fallback && fallback !== 'unset') {
+                        return ` · ${fallback}`;
+                      }
+
+                      return '';
                     })()}
                   </button>
                   <button
