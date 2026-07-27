@@ -976,7 +976,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
     return gridDays;
   };
 
-  const findCalendarSlot = (d: Date) => {
+  const findCalendarSlot = (d: string | Date) => {
     const norm = normalizeDateStr(d);
     return calendarSlots.find(slot => normalizeDateStr(slot.calendarDate) === norm);
   };
