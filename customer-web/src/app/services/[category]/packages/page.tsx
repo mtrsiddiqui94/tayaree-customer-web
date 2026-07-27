@@ -195,7 +195,7 @@ export default function CategoryPackagesPage({ params }: PageProps) {
                     </div>
 
                     <Link
-                      href={`/services/${category}/${p.slug}`}
+                      href={`/services/${category}/${p.slug}/packages/1`}
                       style={{
                         marginTop: '16px',
                         background: '#D71921',
