@@ -210,3 +210,51 @@
   background: rgba(200, 146, 10, 0.12);
   color: var(--amber);
 }
+
+.inviteForm {
+  margin-top: 18px;
+}
+.inviteInputRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.inviteInput {
+  flex: 1;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+}
+.inviteInput:focus {
+  border-color: var(--primary);
+}
+.btnPrimary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  height: 42px;
+  padding: 0 20px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: 0.15s;
+}
+.btnPrimary:hover {
+  background: var(--primary-dark);
+}
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

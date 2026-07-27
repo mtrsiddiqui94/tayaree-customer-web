@@ -22,8 +22,16 @@ export default function Header() {
       // Fetch notification unread count
       async function fetchNotificationCount() {
         try {
-          const result = await api.get<{ data: { count: number } }>(ENDPOINTS.NOTIFICATION_UNREAD_COUNT);
-          setNotificationCount(result?.data?.count ?? 0);
+          const result = await api.get<any>(ENDPOINTS.NOTIFICATION_UNREAD_COUNT);
+          if (result) {
+            let count = 0;
+            if (typeof result === 'number') count = result;
+            else if (typeof result?.data === 'number') count = result.data;
+            else if (result?.data?.unread_count !== undefined) count = Number(result.data.unread_count) || 0;
+            else if (result?.data?.count !== undefined) count = Number(result.data.count) || 0;
+            else if (result?.count !== undefined) count = Number(result.count) || 0;
+            setNotificationCount(count);
+          }
         } catch {
           // Non-critical, ignore
         }

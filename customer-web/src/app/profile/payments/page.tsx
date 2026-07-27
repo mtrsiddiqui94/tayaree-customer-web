@@ -30,19 +30,10 @@ interface BankModel {
   name: string;
 }
 
-const FALLBACK_CARDS: CreditCardModel[] = [
-  { id: 1, cardholder_name: 'Adnan Siddiqui', last_digits: '6411', is_default: true, brand: 'Visa', expiry: '08/28' },
-  { id: 2, cardholder_name: 'Adnan Siddiqui', last_digits: '8823', is_default: false, brand: 'Mastercard', expiry: '11/26' }
-];
-
-const FALLBACK_BANKS: BankAccount[] = [
-  { id: 101, account_title: 'Adnan Siddiqui', account_number: 'PK36 HABB 0001 2345 6789 01', bank_name: 'Habib Bank Limited (HBL)', bank_id: 'hbl', is_default: true }
-];
-
 export default function ProfilePaymentsPage() {
   const router = useRouter();
-  const [cards, setCards] = useState<CreditCardModel[]>(FALLBACK_CARDS);
-  const [savedBankAccounts, setSavedBankAccounts] = useState<BankAccount[]>(FALLBACK_BANKS);
+  const [cards, setCards] = useState<CreditCardModel[]>([]);
+  const [savedBankAccounts, setSavedBankAccounts] = useState<BankAccount[]>([]);
   const [banksList, setBanksList] = useState<BankModel[]>([
     { id: 'hbl', name: 'Habib Bank Limited (HBL)' },
     { id: 'mcb', name: 'MCB Bank' },
@@ -76,38 +67,46 @@ export default function ProfilePaymentsPage() {
       return;
     }
 
-    async function loadPaymentMethods() {
-      setIsLoading(true);
-      try {
-        const [cardsRes, banksRes, acctsRes] = await Promise.all([
-          api.safeCall(() => api.get<any>('/api/v1/payment/credit-cards/list')),
-          api.safeCall(() => api.get<any>('/api/v1/payment/banks/list')),
-          api.safeCall(() => api.get<any>('/api/v1/payment/bank-accounts/list'))
-        ]);
-
-        if (cardsRes.success && cardsRes.data) {
-          const list = cardsRes.data.data || cardsRes.data;
-          if (Array.isArray(list) && list.length > 0) setCards(list);
-        }
-
-        if (banksRes.success && banksRes.data) {
-          const list = banksRes.data.data || banksRes.data;
-          if (Array.isArray(list) && list.length > 0) setBanksList(list);
-        }
-
-        if (acctsRes.success && acctsRes.data) {
-          const list = acctsRes.data.data || acctsRes.data;
-          if (Array.isArray(list) && list.length > 0) setSavedBankAccounts(list);
-        }
-      } catch (err) {
-        console.error('Error fetching payment methods:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     loadPaymentMethods();
   }, [router]);
+
+  async function loadPaymentMethods() {
+    setIsLoading(true);
+    try {
+      const [cardsRes, banksRes, acctsRes] = await Promise.all([
+        api.safeCall(() => api.get<any>('/api/v1/payment/credit-cards/list')),
+        api.safeCall(() => api.get<any>('/api/v1/payment/banks/list')),
+        api.safeCall(() => api.get<any>('/api/v1/payment/bank-accounts/list'))
+      ]);
+
+      if (cardsRes.success && cardsRes.data) {
+        const list = cardsRes.data.data || cardsRes.data;
+        if (Array.isArray(list)) setCards(list);
+        else setCards([]);
+      } else {
+        setCards([]);
+      }
+
+      if (banksRes.success && banksRes.data) {
+        const list = banksRes.data.data || banksRes.data;
+        if (Array.isArray(list) && list.length > 0) setBanksList(list);
+      }
+
+      if (acctsRes.success && acctsRes.data) {
+        const list = acctsRes.data.data || acctsRes.data;
+        if (Array.isArray(list)) setSavedBankAccounts(list);
+        else setSavedBankAccounts([]);
+      } else {
+        setSavedBankAccounts([]);
+      }
+    } catch (err) {
+      console.error('Error fetching payment methods:', err);
+      setCards([]);
+      setSavedBankAccounts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const openDrawer = (type: 'card' | 'bank') => {
     setDrawerType(type);
@@ -133,8 +132,8 @@ export default function ProfilePaymentsPage() {
     const res = await api.safeCall(() => api.post('/api/v1/payment/credit-cards/store', payload));
     if (res.success) {
       alert('Card saved successfully!');
+      loadPaymentMethods();
     } else {
-      // Local optimistic update if backend API fails
       setCards(prev => [
         ...prev,
         {
@@ -143,7 +142,7 @@ export default function ProfilePaymentsPage() {
           last_digits: cardNumber.slice(-4),
           is_default: cardIsDefault,
           brand: 'Visa',
-          expiry: cardExpiry || '12/28'
+          expiry: cardExpiry || 'unset'
         }
       ]);
     }
@@ -169,6 +168,7 @@ export default function ProfilePaymentsPage() {
     const res = await api.safeCall(() => api.post('/api/v1/payment/bank-accounts/store', payload));
     if (res.success) {
       alert('Bank account added successfully!');
+      loadPaymentMethods();
     } else {
       const bObj = banksList.find(b => String(b.id) === String(bankId));
       setSavedBankAccounts(prev => [
@@ -205,92 +205,109 @@ export default function ProfilePaymentsPage() {
         <p className={styles.pageSub}>Manage your saved credit cards, bank accounts, and payment preferences.</p>
       </div>
 
-      {/* CREDIT CARDS */}
-      <div className={styles.card}>
-        <div className={styles.cardInner}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardTitle}>
-              <i className="bx bx-credit-card"></i>Saved Cards
-            </div>
-            <button className={styles.addLink} onClick={() => openDrawer('card')}>
-              <i className="bx bx-plus"></i>Add Credit Card
-            </button>
-          </div>
-
-          <div className={styles.sectionLbl}>Your Cards</div>
-
-          {cards.map((c) => (
-            <div key={c.id} className={`${styles.pmItem} ${c.is_default ? styles.default : ''}`}>
-              <div className={`${styles.payLogo} ${c.brand?.toLowerCase() === 'mastercard' ? styles.payLogoMaster : styles.payLogoVisa}`}>
-                {c.brand || 'VISA'}
-              </div>
-              <div className={styles.pmBody}>
-                <div className={styles.pmTop}>
-                  <div className={styles.pmName}>
-                    {c.cardholder_name}
-                    {c.is_default && <span className={styles.pmBadge}>Default</span>}
-                  </div>
-                  <div className={styles.pmActions}>
-                    <button className={`${styles.pmAct} ${styles.pmActDanger}`} onClick={() => handleDeleteCard(c.id)}>
-                      <i className="bx bx-trash"></i>Remove
-                    </button>
-                  </div>
-                </div>
-                <div className={styles.pmSub}>•••• •••• •••• {c.last_digits} · Exp {c.expiry || '08/28'}</div>
-              </div>
-            </div>
-          ))}
-
-          <div className={styles.secureNote}>
-            <i className="bx bx-shield-quarter"></i>
-            <div className={styles.secureNoteTxt}>
-              Your payment information is encrypted using 256-bit SSL security. Tayaree does not store your raw card details.
-            </div>
-          </div>
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: '80px 0' }}>
+          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
+          <p style={{ marginTop: '12px', color: 'var(--text-secondary)', fontSize: '14px' }}>Loading payment methods...</p>
         </div>
-      </div>
-
-      {/* BANK ACCOUNTS */}
-      <div className={styles.card}>
-        <div className={styles.cardInner}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardTitle}>
-              <i className="bx bx-building-house"></i>Bank Accounts
-            </div>
-            <button className={styles.addLink} onClick={() => openDrawer('bank')}>
-              <i className="bx bx-plus"></i>Add Bank Account
-            </button>
-          </div>
-
-          <div className={styles.sectionLbl}>Direct Bank Debit</div>
-
-          {savedBankAccounts.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '10px 0' }}>No bank accounts saved yet.</div>
-          ) : (
-            savedBankAccounts.map((b) => (
-              <div key={b.id} className={`${styles.pmItem} ${b.is_default ? styles.default : ''}`}>
-                <div className={`${styles.payLogo} ${styles.payLogoBank}`}>
-                  <i className="bx bx-building"></i>
+      ) : (
+        <>
+          {/* CREDIT CARDS */}
+          <div className={styles.card}>
+            <div className={styles.cardInner}>
+              <div className={styles.cardHead}>
+                <div className={styles.cardTitle}>
+                  <i className="bx bx-credit-card"></i>Saved Cards
                 </div>
-                <div className={styles.pmBody}>
-                  <div className={styles.pmTop}>
-                    <div className={styles.pmName}>
-                      {b.bank_name}
-                      {b.is_default && <span className={styles.pmBadge}>Default</span>}
+                <button className={styles.addLink} onClick={() => openDrawer('card')}>
+                  <i className="bx bx-plus"></i>Add Credit Card
+                </button>
+              </div>
+
+              <div className={styles.sectionLbl}>Your Cards</div>
+
+              {cards.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
+                  No saved credit or debit cards found.
+                </div>
+              ) : (
+                cards.map((c) => (
+                  <div key={c.id} className={`${styles.pmItem} ${c.is_default ? styles.default : ''}`}>
+                    <div className={`${styles.payLogo} ${c.brand?.toLowerCase() === 'mastercard' ? styles.payLogoMaster : styles.payLogoVisa}`}>
+                      {c.brand || 'VISA'}
                     </div>
-                    <div className={styles.pmActions}>
-                      <button className={`${styles.pmAct} ${styles.pmActDanger}`} onClick={() => handleDeleteBank(b.id)}>
-                        <i className="bx bx-trash"></i>Remove
-                      </button>
+                    <div className={styles.pmBody}>
+                      <div className={styles.pmTop}>
+                        <div className={styles.pmName}>
+                          {c.cardholder_name || 'Cardholder'}
+                          {c.is_default && <span className={styles.pmBadge}>Default</span>}
+                        </div>
+                        <div className={styles.pmActions}>
+                          <button className={`${styles.pmAct} ${styles.pmActDanger}`} onClick={() => handleDeleteCard(c.id)}>
+                            <i className="bx bx-trash"></i>Remove
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.pmSub}>•••• •••• •••• {c.last_digits || 'unset'} · Exp {c.expiry || 'unset'}</div>
                     </div>
                   </div>
-                  <div className={styles.pmSub}>{b.account_title} · {b.account_number}</div>
+                ))
+              )}
+
+              <div className={styles.secureNote}>
+                <i className="bx bx-shield-quarter"></i>
+                <div className={styles.secureNoteTxt}>
+                  Your payment information is encrypted using 256-bit SSL security. Tayaree does not store your raw card details.
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+
+          {/* BANK ACCOUNTS */}
+          <div className={styles.card}>
+            <div className={styles.cardInner}>
+              <div className={styles.cardHead}>
+                <div className={styles.cardTitle}>
+                  <i className="bx bx-building-house"></i>Bank Accounts
+                </div>
+                <button className={styles.addLink} onClick={() => openDrawer('bank')}>
+                  <i className="bx bx-plus"></i>Add Bank Account
+                </button>
+              </div>
+
+              <div className={styles.sectionLbl}>Direct Bank Debit</div>
+
+              {savedBankAccounts.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
+                  No bank accounts saved yet.
+                </div>
+              ) : (
+                savedBankAccounts.map((b) => (
+                  <div key={b.id} className={`${styles.pmItem} ${b.is_default ? styles.default : ''}`}>
+                    <div className={`${styles.payLogo} ${styles.payLogoBank}`}>
+                      <i className="bx bx-building"></i>
+                    </div>
+                    <div className={styles.pmBody}>
+                      <div className={styles.pmTop}>
+                        <div className={styles.pmName}>
+                          {b.bank_name || 'Bank Account'}
+                          {b.is_default && <span className={styles.pmBadge}>Default</span>}
+                        </div>
+                        <div className={styles.pmActions}>
+                          <button className={`${styles.pmAct} ${styles.pmActDanger}`} onClick={() => handleDeleteBank(b.id)}>
+                            <i className="bx bx-trash"></i>Remove
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.pmSub}>{b.account_title || 'unset'} · {b.account_number || 'unset'}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* DRAWER / SIDE MODAL */}
       <div className={`${styles.drawerOverlay} ${drawerOpen ? styles.open : ''}`} onClick={closeDrawer}>

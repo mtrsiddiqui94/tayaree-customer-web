@@ -32,6 +32,7 @@ export default function PaymentMethodsPage() {
   const [cards, setCards] = useState<CreditCardModel[]>([]);
   const [banksList, setBanksList] = useState<BankModel[]>([]);
   const [savedBankAccounts, setSavedBankAccounts] = useState<BankAccount[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function PaymentMethodsPage() {
   }, []);
 
   async function loadData() {
+    setIsLoading(true);
     try {
       const cardsRes = await api.get<any>("/api/v1/payment/credit-cards/list");
       if (cardsRes?.data && Array.isArray(cardsRes.data)) {
@@ -86,6 +88,8 @@ export default function PaymentMethodsPage() {
       }
     } catch (err) {
       console.error("Error loading payment methods:", err);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -225,10 +229,17 @@ export default function PaymentMethodsPage() {
             <div className={styles.pageSub}>Manage the cards and payment options used at checkout.</div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.cardInner}>
-              <div className={styles.cardHead}>
-                <div className={styles.cardTitle}><i className='bx bx-credit-card'></i>Saved Cards</div>
+          {isLoading ? (
+            <div style={{ textAlign: "center", padding: "80px 0" }}>
+              <i className="bx bx-loader-alt bx-spin" style={{ fontSize: "40px", color: "var(--primary)" }}></i>
+              <p style={{ marginTop: "12px", color: "var(--text-secondary)", fontSize: "14px" }}>Loading payment methods...</p>
+            </div>
+          ) : (
+            <>
+              <div className={styles.card}>
+                <div className={styles.cardInner}>
+                  <div className={styles.cardHead}>
+                    <div className={styles.cardTitle}><i className='bx bx-credit-card'></i>Saved Cards</div>
                 <button className={styles.addLink} onClick={() => openDrawer(1)}><i className='bx bx-plus'></i>Add Payment Method</button>
               </div>
 
@@ -317,8 +328,10 @@ export default function PaymentMethodsPage() {
               </div>
             </div>
           </div>
-        </div>
+          </>
+        )}
       </div>
+    </div>
 
       {/* Drawer */}
       <div className={`${styles.drawerOverlay} ${drawerOpen ? styles.drawerOverlayOpen : ""}`} onClick={closeDrawer}>

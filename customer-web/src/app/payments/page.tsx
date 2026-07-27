@@ -116,10 +116,11 @@ export default function AllPaymentsPage() {
           const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
           const summary = payload?.summary || raw?.summary || null;
 
-          setUpcomingItems(items.length > 0 ? items : DEFAULT_MOCK_UPCOMING);
+          setUpcomingItems(items);
           setUpcomingSummary(summary);
         } else {
-          setUpcomingItems(DEFAULT_MOCK_UPCOMING);
+          setUpcomingItems([]);
+          setUpcomingSummary(null);
         }
 
         if (historyRes.success && historyRes.data) {
@@ -128,11 +129,11 @@ export default function AllPaymentsPage() {
           const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
           const refundData = payload?.refund_hero || raw?.refund_hero || null;
 
-          setHistoryItems(items.length > 0 ? items : DEFAULT_MOCK_HISTORY);
-          setRefundHero(refundData || DEFAULT_MOCK_REFUND);
+          setHistoryItems(items);
+          setRefundHero(refundData);
         } else {
-          setHistoryItems(DEFAULT_MOCK_HISTORY);
-          setRefundHero(DEFAULT_MOCK_REFUND);
+          setHistoryItems([]);
+          setRefundHero(null);
         }
       } catch (err) {
         console.error('Error fetching payments:', err);
@@ -399,7 +400,14 @@ export default function AllPaymentsPage() {
           )}
         </div>
 
-        {activeTab === 'upcoming' && (
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
+            <p style={{ marginTop: '12px', color: 'var(--text-secondary)', fontSize: '14px' }}>Loading payment records...</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'upcoming' && (
           <div>
             {filteredUpcoming.length > 0 && (
               <div className={styles.payHeroRow}>
@@ -657,6 +665,8 @@ export default function AllPaymentsPage() {
               )}
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </DashboardLayout>
