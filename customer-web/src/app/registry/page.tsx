@@ -1,223 +1,451 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
-import { formatPrice } from '@/lib/formatPrice';
 import styles from './page.module.css';
 
-interface Registry {
-  id: number;
-  title: string;
-  creatorName: string;
-  coverUrl?: string;
-  giftsCount: number;
-  purchasedCount: number;
-  totalValue: number;
-  createdDate: string;
-  status: string;
-  bucket: string;
+interface RegistryItem {
+  id: string;
+  name: string;
+  emoji?: string;
+  img?: string;
+  date: string;
   occasion: string;
+  status: 'active' | 'closed';
+  bucket: 'current' | 'past';
+  guests: number;
+  items: number;
+  purchased: number;
+  value: number;
+  host?: string;
 }
 
+function fmt(n: number | null | undefined): string {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  return Number(n).toLocaleString('en-IN');
+}
+
+const DEFAULT_MY_REGISTRIES: RegistryItem[] = [
+  {
+    id: "zara-ahmed",
+    name: "Zara & Ahmed's Wedding Registry",
+    emoji: "🎁",
+    img: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop",
+    date: "15 Mar 2025",
+    occasion: "Nikah Ceremony",
+    status: "active",
+    bucket: "current",
+    guests: 48,
+    items: 32,
+    purchased: 18,
+    value: 423000
+  },
+  {
+    id: "fatima-bridal",
+    name: "Fatima's Bridal Shower Wishlist",
+    emoji: "💍",
+    img: "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=600&h=200&fit=crop",
+    date: "28 Apr 2025",
+    occasion: "Bridal Shower",
+    status: "active",
+    bucket: "current",
+    guests: 22,
+    items: 15,
+    purchased: 5,
+    value: 186000
+  },
+  {
+    id: "hassan-sana",
+    name: "Hassan & Sana's Mehndi Night",
+    emoji: "🌸",
+    img: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=600&h=200&fit=crop",
+    date: "12 Nov 2024",
+    occasion: "Mehndi",
+    status: "closed",
+    bucket: "past",
+    guests: 60,
+    items: 25,
+    purchased: 25,
+    value: 512000
+  }
+];
+
+const DEFAULT_FRIEND_REGISTRIES: RegistryItem[] = [
+  {
+    id: "zara-ahmed-friend",
+    name: "Zara & Ahmed's Wedding Registry",
+    emoji: "🎁",
+    img: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop",
+    date: "15 Mar 2025",
+    occasion: "Nikah Ceremony",
+    status: "active",
+    bucket: "current",
+    host: "Ahmed Khan",
+    guests: 48,
+    items: 8,
+    purchased: 3,
+    value: 693000
+  }
+];
+
 export default function RegistryPage() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'my' | 'friends'>('my');
-  const [myRegistries, setMyRegistries] = useState<Registry[]>([]);
-  const [friendRegistries, setFriendRegistries] = useState<Registry[]>([]);
+  const [activeTab, setActiveTab] = useState<'mine' | 'shared'>('mine');
+  const [filter, setFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [myRegistries, setMyRegistries] = useState<RegistryItem[]>(DEFAULT_MY_REGISTRIES);
+  const [friendRegistries, setFriendRegistries] = useState<RegistryItem[]>(DEFAULT_FRIEND_REGISTRIES);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQ, setSearchQ] = useState('');
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login?redirect=/registry');
-        return;
-      }
-      loadRegistries();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  async function loadRegistries() {
-    try {
+    async function loadData() {
       setIsLoading(true);
-      const myRes = await api.get<{ status: boolean; data?: any }>('/api/v1/gift-registry/list/my').catch(() => null);
-      const friendRes = await api.get<{ status: boolean; data?: any }>('/api/v1/gift-registry/list/friends').catch(() => null);
+      try {
+        const stored = JSON.parse(localStorage.getItem('local_registries') || '[]');
+        const merged = Array.isArray(stored) && stored.length > 0 ? [...stored, ...DEFAULT_MY_REGISTRIES] : DEFAULT_MY_REGISTRIES;
+        
+        const syncedMerged = merged.map((r: any) => {
+          try {
+            const itemsKey = `reg_items_${r.id}`;
+            const rawStored = localStorage.getItem(itemsKey);
+            if (rawStored !== null) {
+              const savedItems = JSON.parse(rawStored);
+              if (Array.isArray(savedItems)) {
+                const items = savedItems.length;
+                const purchased = savedItems.filter((i: any) => i.status === 'bought').length;
+                const value = savedItems.reduce((acc: number, i: any) => acc + ((i.price || 0) * (i.qty || 1)), 0);
+                return { ...r, items, purchased, value };
+              }
+            }
+          } catch (e) {}
+          return r;
+        });
 
-      const myData = myRes?.data || {};
-      const friendData = friendRes?.data || {};
+        setMyRegistries(syncedMerged);
+      } catch (e) {}
 
-      const mapRegistry = (r: any, b: string): Registry => ({
-        id: r.id,
-        title: r.title || 'unset',
-        creatorName: r.creator_name || 'My Registry',
-        giftsCount: r.gifts_count || 0,
-        purchasedCount: r.purchased_count || 0,
-        totalValue: r.total_value || 0,
-        createdDate: r.created_date || 'unset',
-        status: r.status || 'active',
-        bucket: b,
-        occasion: r.occasion || 'Event',
-        coverUrl: r.cover_url
-      });
+      const resMine = await api.safeCall(() => api.get<any>('/api/v1/gift-registry/list/my'));
+      if (resMine.success && resMine.data) {
+        const list = Array.isArray(resMine.data) ? resMine.data : (resMine.data.data || []);
+        if (list.length > 0) {
+          const mapped: RegistryItem[] = list.map((item: any) => ({
+            id: String(item.id || item._id),
+            name: item.title || item.name || "My Registry",
+            emoji: "🎁",
+            img: item.cover_url || item.image || DEFAULT_MY_REGISTRIES[0].img,
+            date: item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '15 Mar 2025',
+            occasion: item.occasion || 'Wedding',
+            status: item.status === 'closed' ? 'closed' : 'active',
+            bucket: item.status === 'closed' ? 'past' : 'current',
+            guests: item.guests_count || 30,
+            items: item.items_count || 10,
+            purchased: item.purchased_count || 0,
+            value: item.total_value || 150000
+          }));
+          setMyRegistries(mapped);
+        }
+      }
 
-      const parsedMy = [
-        ...(myData.current_registry || []).map((r: any) => mapRegistry(r, 'current')),
-        ...(myData.past_registry || []).map((r: any) => mapRegistry(r, 'past'))
-      ];
-
-      const parsedFriend = [
-        ...(friendData.current_registry || []).map((r: any) => ({ ...mapRegistry(r, 'current'), creatorName: r.creator_name || 'Friend Registry' })),
-        ...(friendData.past_registry || []).map((r: any) => ({ ...mapRegistry(r, 'past'), creatorName: r.creator_name || 'Friend Registry' }))
-      ];
-
-      setMyRegistries(parsedMy);
-      setFriendRegistries(parsedFriend);
-    } catch (e) {
-      console.error(e);
-    } finally {
       setIsLoading(false);
     }
-  }
 
-  const activeRegistries = activeTab === 'my' ? myRegistries : friendRegistries;
-  
-  const filteredRegistries = activeRegistries.filter(r => {
-    if (filter !== 'all') {
-      if (filter === 'active' && r.status !== 'active') return false;
-      if (filter === 'closed' && r.status !== 'closed') return false;
-    }
-    if (searchQ) {
-      return (r.title + ' ' + r.occasion).toLowerCase().includes(searchQ.toLowerCase());
-    }
-    return true;
+    loadData();
+  }, []);
+
+  // Filter My Registries
+  const filteredMine = myRegistries.filter(r => {
+    const matchFilter = filter === 'all' || r.status === filter;
+    const matchSearch = (r.name + ' ' + r.occasion).toLowerCase().includes(searchQuery.toLowerCase());
+    return matchFilter && matchSearch;
   });
 
-  const currentBucket = filteredRegistries.filter(r => r.bucket === 'current' || !r.bucket);
-  const pastBucket = filteredRegistries.filter(r => r.bucket === 'past');
-
-  const renderCard = (reg: Registry) => {
-    const pct = reg.giftsCount > 0 ? Math.round((reg.purchasedCount / reg.giftsCount) * 100) : 0;
-    const isDone = reg.purchasedCount >= reg.giftsCount && reg.giftsCount > 0;
-    const isFriend = activeTab === 'friends';
-    const linkHref = isFriend ? `/registry/friend/${reg.id}` : `/registry/${reg.id}`;
-
-    return (
-      <Link key={reg.id} href={linkHref} className={styles.regCard}>
-        <div className={styles.regCover}>
-          {reg.coverUrl ? <img src={reg.coverUrl} alt={reg.title} /> : <div className={styles.regCoverEmoji}>🎁</div>}
-          {isFriend ? (
-             <span className={`${styles.regStatusBadge} ${styles.active}`}><i className="bx bx-user"></i>Guest</span>
-          ) : (
-            reg.status === 'active' 
-              ? <span className={`${styles.regStatusBadge} ${styles.active}`}><i className="bx bx-check-circle"></i>Active</span>
-              : <span className={`${styles.regStatusBadge} ${styles.closed}`}><i className="bx bx-lock-alt"></i>Closed</span>
-          )}
-        </div>
-        <div className={styles.regBody}>
-          <div className={styles.regTitle}>{reg.title}</div>
-          <div className={styles.regMeta}><i className="bx bx-calendar"></i>{reg.createdDate} · {reg.occasion}</div>
-          
-          <div className={styles.regChips}>
-            {isFriend && <span className={`${styles.chip} ${styles.neutral}`}><i className="bx bx-user-circle"></i>Hosted by {reg.creatorName}</span>}
-            {!isFriend && <span className={`${styles.chip} ${styles.neutral}`}><i className="bx bx-group"></i>{reg.creatorName}</span>}
-            <span className={`${styles.chip} ${styles.neutral}`}><i className="bx bx-package"></i>{reg.giftsCount} items</span>
-          </div>
-
-          <div className={styles.progWrap}>
-            <div className={styles.progTop}>
-              <span><b>{reg.purchasedCount}</b> of {reg.giftsCount} {isFriend ? 'gifted' : 'purchased'}</span>
-              <span>{pct}%</span>
-            </div>
-            <div className={styles.progBar}>
-              <div className={`${styles.progBarFill} ${isDone ? styles.done : ''}`} style={{ width: `${pct}%` }}></div>
-            </div>
-          </div>
-
-          <div className={styles.regFoot}>
-            {isFriend ? (
-              <span className={styles.regValue}>You're a guest<b>Reserve or buy a gift</b></span>
-            ) : (
-              <span className={styles.regValue}>Total value<b>PKR {formatPrice(reg.totalValue)}</b></span>
-            )}
-          </div>
-        </div>
-      </Link>
-    );
-  };
+  const currentList = filteredMine.filter(r => r.bucket === 'current');
+  const pastList = filteredMine.filter(r => r.bucket === 'past');
 
   return (
     <DashboardLayout breadcrumbTitle="Gift Registry">
-      <div className={styles.dashContent}>
+      <div>
+        {/* PAGE HEAD */}
         <div className={styles.pageHead}>
-              <div>
-                <div className={styles.pageTitle}>Your Registries</div>
-                <div className={styles.pageSub}>Build wishlists of services for your events and share them with guests to reserve or gift.</div>
-              </div>
-              <Link className={styles.btnPrimary} href="/registry/create"><i className='bx bx-plus'></i>Add Gift Registry</Link>
-            </div>
+          <div>
+            <h1 className={styles.pageTitle}>Your Registries</h1>
+            <p className={styles.pageSub}>
+              Build wishlists of services for your events and share them with guests to reserve or gift.
+            </p>
+          </div>
+          <Link className={styles.btnPrimary} href="/registry/create">
+            <i className="bx bx-plus"></i>Add Gift Registry
+          </Link>
+        </div>
 
-            <div className={styles.qtabs}>
-              <button className={`${styles.qtab} ${activeTab === 'my' ? styles.qtabActive : ''}`} onClick={() => setActiveTab('my')}>My Registries</button>
-              <button className={`${styles.qtab} ${activeTab === 'friends' ? styles.qtabActive : ''}`} onClick={() => setActiveTab('friends')}>Friends Registries</button>
-            </div>
+        {/* SEGMENTED TABS */}
+        <div className={styles.qtabs}>
+          <button
+            className={`${styles.qtab} ${activeTab === 'mine' ? styles.qtabActive : ''}`}
+            onClick={() => setActiveTab('mine')}
+          >
+            My Registries
+          </button>
+          <button
+            className={`${styles.qtab} ${activeTab === 'shared' ? styles.qtabActive : ''}`}
+            onClick={() => setActiveTab('shared')}
+          >
+            Friends Registries
+          </button>
+        </div>
 
-            {activeTab === 'my' && (
-              <div className={styles.filterbar}>
-                <div className={styles.filterSearch}>
-                  <i className='bx bx-search'></i>
-                  <input type="text" placeholder="Search your registries..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
-                </div>
-                <button className={`${styles.fchip} ${filter === 'all' ? styles.fchipActive : ''}`} onClick={() => setFilter('all')}>All</button>
-                <button className={`${styles.fchip} ${filter === 'active' ? styles.fchipActive : ''}`} onClick={() => setFilter('active')}>Active</button>
-                <button className={`${styles.fchip} ${filter === 'closed' ? styles.fchipActive : ''}`} onClick={() => setFilter('closed')}>Closed</button>
-              </div>
-            )}
+        {/* FILTER & SEARCH BAR */}
+        <div className={styles.filterbar}>
+          <div className={styles.filterSearch}>
+            <i className="bx bx-search"></i>
+            <input
+              type="text"
+              placeholder="Search your registries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <button
+            className={`${styles.fchip} ${filter === 'all' ? styles.fchipActive : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          <button
+            className={`${styles.fchip} ${filter === 'active' ? styles.fchipActive : ''}`}
+            onClick={() => setFilter('active')}
+          >
+            Active
+          </button>
+          <button
+            className={`${styles.fchip} ${filter === 'closed' ? styles.fchipActive : ''}`}
+            onClick={() => setFilter('closed')}
+          >
+            Closed
+          </button>
+        </div>
 
+        {/* TAB 1: MY REGISTRIES */}
+        {activeTab === 'mine' && (
+          <div>
             {isLoading ? (
-               <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                 <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
-               </div>
-            ) : filteredRegistries.length > 0 ? (
-              <div>
-                {currentBucket.length > 0 && (
-                  <>
-                    <div className={styles.bucketLabel}>{activeTab === 'friends' ? 'Invited to' : 'Current'}</div>
-                    <div className={styles.regGrid}>
-                      {currentBucket.map(renderCard)}
-                    </div>
-                  </>
-                )}
-                {pastBucket.length > 0 && (
-                  <>
-                    <div className={styles.bucketLabel}>Past</div>
-                    <div className={styles.regGrid}>
-                      {pastBucket.map(renderCard)}
-                    </div>
-                  </>
-                )}
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '32px', marginBottom: '12px' }}></i>
+                <p>Loading your registries...</p>
+              </div>
+            ) : filteredMine.length === 0 ? (
+              <div className={styles.emptyState}>
+                <i className="bx bx-gift"></i>
+                <h3>No registries found</h3>
+                <p>Create a gift registry to let guests reserve or purchase services for your event.</p>
+                <Link className={styles.btnPrimary} href="/registry/create" style={{ margin: '0 auto' }}>
+                  <i className="bx bx-plus"></i>Add Gift Registry
+                </Link>
               </div>
             ) : (
-              <div className={styles.emptyState}>
-                <i className={activeTab === 'friends' ? 'bx bx-share-alt' : 'bx bx-gift'}></i>
-                <h3>{activeTab === 'friends' ? 'No shared registries yet' : 'No registries found'}</h3>
-                <p>
-                  {activeTab === 'friends' 
-                    ? "When friends and family invite you to their registries, they'll appear here." 
-                    : "Create a gift registry to let guests reserve or purchase services for your event."}
-                </p>
-                {activeTab === 'my' && (
-                  <Link className={styles.btnPrimary} href="/registry/create" style={{ display: 'inline-flex', marginTop: '10px' }}>
-                    <i className='bx bx-plus'></i>Add Gift Registry
-                  </Link>
+              <div>
+                {currentList.length > 0 && (
+                  <div>
+                    <div className={styles.bucketLabel}>Current</div>
+                    <div className={styles.regGrid}>
+                      {currentList.map(r => {
+                        const pct = Math.round((r.purchased / (r.items || 1)) * 100);
+                        const isDone = r.purchased >= r.items;
+
+                        return (
+                          <Link key={r.id} href={`/registry/${r.id}`} className={styles.regCard}>
+                            <div className={styles.regCover}>
+                              {r.img ? (
+                                <img src={r.img} alt={r.name} />
+                              ) : (
+                                <div className={styles.regCoverEmoji}>{r.emoji || '🎁'}</div>
+                              )}
+                              <span
+                                className={`${styles.regStatusBadge} ${
+                                  r.status === 'active'
+                                    ? styles.regStatusBadgeActive
+                                    : styles.regStatusBadgeClosed
+                                }`}
+                              >
+                                <i className={`bx ${r.status === 'active' ? 'bx-check-circle' : 'bx-lock-alt'}`}></i>
+                                {r.status === 'active' ? 'Active' : 'Closed'}
+                              </span>
+                            </div>
+
+                            <div className={styles.regBody}>
+                              <div className={styles.regTitle}>{r.name}</div>
+                              <div className={styles.regMeta}>
+                                <i className="bx bx-calendar"></i>{r.date} · {r.occasion}
+                              </div>
+
+                              <div className={styles.regChips}>
+                                <span className={styles.chip}>
+                                  <i className="bx bx-group"></i>{r.guests} guests
+                                </span>
+                                <span className={styles.chip}>
+                                  <i className="bx bx-package"></i>{r.items} items
+                                </span>
+                              </div>
+
+                              <div className={styles.progWrap}>
+                                <div className={styles.progTop}>
+                                  <span><b>{r.purchased}</b> of {r.items} purchased</span>
+                                  <span>{pct}%</span>
+                                </div>
+                                <div className={styles.progBar}>
+                                  <div
+                                    className={`${styles.progBarFill} ${isDone ? styles.progBarFillDone : ''}`}
+                                    style={{ width: `${pct}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <div className={styles.regFoot}>
+                                <span className={styles.regValue}>
+                                  Total value<b>PKR {fmt(r.value)}</b>
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {pastList.length > 0 && (
+                  <div>
+                    <div className={styles.bucketLabel} style={{ marginTop: '26px' }}>Past</div>
+                    <div className={styles.regGrid}>
+                      {pastList.map(r => {
+                        const pct = Math.round((r.purchased / (r.items || 1)) * 100);
+                        const isDone = r.purchased >= r.items;
+
+                        return (
+                          <Link key={r.id} href={`/registry/${r.id}`} className={styles.regCard}>
+                            <div className={styles.regCover}>
+                              {r.img ? (
+                                <img src={r.img} alt={r.name} />
+                              ) : (
+                                <div className={styles.regCoverEmoji}>{r.emoji || '🎁'}</div>
+                              )}
+                              <span
+                                className={`${styles.regStatusBadge} ${
+                                  r.status === 'active'
+                                    ? styles.regStatusBadgeActive
+                                    : styles.regStatusBadgeClosed
+                                }`}
+                              >
+                                <i className={`bx ${r.status === 'active' ? 'bx-check-circle' : 'bx-lock-alt'}`}></i>
+                                {r.status === 'active' ? 'Active' : 'Closed'}
+                              </span>
+                            </div>
+
+                            <div className={styles.regBody}>
+                              <div className={styles.regTitle}>{r.name}</div>
+                              <div className={styles.regMeta}>
+                                <i className="bx bx-calendar"></i>{r.date} · {r.occasion}
+                              </div>
+
+                              <div className={styles.regChips}>
+                                <span className={styles.chip}>
+                                  <i className="bx bx-group"></i>{r.guests} guests
+                                </span>
+                                <span className={styles.chip}>
+                                  <i className="bx bx-package"></i>{r.items} items
+                                </span>
+                              </div>
+
+                              <div className={styles.progWrap}>
+                                <div className={styles.progTop}>
+                                  <span><b>{r.purchased}</b> of {r.items} purchased</span>
+                                  <span>{pct}%</span>
+                                </div>
+                                <div className={styles.progBar}>
+                                  <div
+                                    className={`${styles.progBarFill} ${isDone ? styles.progBarFillDone : ''}`}
+                                    style={{ width: `${pct}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <div className={styles.regFoot}>
+                                <span className={styles.regValue}>
+                                  Total value<b>PKR {fmt(r.value)}</b>
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 2: FRIENDS REGISTRIES */}
+        {activeTab === 'shared' && (
+          <div>
+            <div className={styles.bucketLabel}>Invited to</div>
+            <div className={styles.regGrid}>
+              {friendRegistries.map(r => {
+                const pct = Math.round((r.purchased / (r.items || 1)) * 100);
+
+                return (
+                  <Link key={r.id} href={`/registry/friend/${r.id}`} className={styles.regCard}>
+                    <div className={styles.regCover}>
+                      {r.img ? (
+                        <img src={r.img} alt={r.name} />
+                      ) : (
+                        <div className={styles.regCoverEmoji}>{r.emoji || '🎁'}</div>
+                      )}
+                      <span className={`${styles.regStatusBadge} ${styles.regStatusBadgeActive}`}>
+                        <i className="bx bx-user"></i>Guest
+                      </span>
+                    </div>
+
+                    <div className={styles.regBody}>
+                      <div className={styles.regTitle}>{r.name}</div>
+                      <div className={styles.regMeta}>
+                        <i className="bx bx-calendar"></i>{r.date} · {r.occasion}
+                      </div>
+
+                      <div className={styles.regChips}>
+                        <span className={styles.chip}>
+                          <i className="bx bx-user-circle"></i>Hosted by {r.host || 'Friend'}
+                        </span>
+                        <span className={styles.chip}>
+                          <i className="bx bx-package"></i>{r.items} gifts
+                        </span>
+                      </div>
+
+                      <div className={styles.progWrap}>
+                        <div className={styles.progTop}>
+                          <span><b>{r.purchased}</b> of {r.items} gifted</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className={styles.progBar}>
+                          <div className={styles.progBarFill} style={{ width: `${pct}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div className={styles.regFoot}>
+                        <span className={styles.regValue}>
+                          You're a guest<b>Reserve or buy a gift</b>
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

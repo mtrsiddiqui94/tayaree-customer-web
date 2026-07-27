@@ -1,175 +1,114 @@
-.page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px 100px;
-  font-family: 'Poppins', sans-serif;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 24px;
-}
-
-.breadcrumb a {
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.breadcrumb a:hover {
-  color: var(--primary);
-}
-
-.breadcrumb .sep {
-  opacity: 0.4;
-}
-
-.breadcrumb .current {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
 .pageHead {
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
-
 .pageTitle {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
 }
-
 .pageSub {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
-.dashLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 30px;
-  align-items: start;
-}
-
-@media (max-width: 968px) {
-  .dashLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Anonymity Banner */
+/* anonymity note */
 .anonNote {
   display: flex;
-  gap: 12px;
+  gap: 11px;
   align-items: flex-start;
-  background: rgba(26, 107, 181, 0.06);
-  border: 1px solid rgba(26, 107, 181, 0.22);
+  background: rgba(26,107,181,0.06);
+  border: 1px solid rgba(26,107,181,0.22);
   border-radius: var(--radius-m);
-  padding: 16px;
-  margin-bottom: 24px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
 }
-
 .anonNote i {
   color: var(--info);
   font-size: 20px;
   flex-shrink: 0;
   margin-top: 1px;
 }
-
 .anonNoteT {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-primary);
 }
-
 .anonNoteS {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   line-height: 1.5;
   margin-top: 2px;
 }
 
-/* Quote Tabs segment controller */
-.qtabs {
-  display: inline-flex;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  padding: 4px;
-  gap: 2px;
-  margin-bottom: 24px;
+.filterbar {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
-
-.qtab {
-  padding: 8px 18px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 12.5px;
+.fchip {
+  font-size: 13px;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.qtab:hover {
-  color: var(--text-primary);
-}
-
-.qtabActive {
+  color: var(--text-secondary);
   background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: .15s;
+  font-family: inherit;
+}
+.fchip:hover {
+  background: var(--surface);
   color: var(--primary);
-  box-shadow: var(--shadow-sm);
+}
+.fchipActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
 }
 
-/* Event grouping quotes */
+/* event group */
 .qevent {
-  margin-bottom: 24px;
+  margin-bottom: 26px;
 }
-
 .qeventHead {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .qeventTitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
-  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
-
 .qeventDate {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
-
 .qeventDate i {
   color: var(--primary);
+  font-size: 14px;
 }
-
 .qeventCount {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--info);
-  background: rgba(26, 107, 181, 0.08);
-  padding: 4px 10px;
+  background: rgba(26,107,181,0.09);
+  padding: 5px 12px;
   border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
 }
 
-/* Quote cards list */
+/* quote group card (one service) */
 .qcard {
   display: flex;
   align-items: center;
@@ -177,393 +116,110 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  padding: 16px;
+  padding: 16px 18px;
   margin-bottom: 12px;
-  transition: all 0.15s ease;
+  transition: border-color .15s, box-shadow .15s;
   text-decoration: none;
   color: inherit;
 }
-
 .qcard:hover {
-  border-color: var(--primary);
+  border-color: var(--text-muted);
   box-shadow: var(--shadow-sm);
 }
-
 .qcardIc {
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   border-radius: var(--radius-s);
   background: var(--primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  color: var(--primary);
+  font-size: 26px;
   flex-shrink: 0;
 }
-
 .qcardMain {
   flex: 1;
   min-width: 0;
 }
-
 .qcardName {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
-  color: var(--text-primary);
 }
-
 .qcardMeta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   margin-top: 3px;
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-
-.qbadge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-
-.qbadgeNew {
-  background: rgba(26, 107, 181, 0.08);
-  color: var(--info);
-}
-
-.qbadgeNegotiating {
-  background: rgba(200, 146, 10, 0.1);
-  color: var(--amber);
-}
-
-.qbadgeAccepted {
-  background: rgba(26, 122, 54, 0.09);
-  color: var(--success);
-}
-
 .qcardBest {
   text-align: right;
   flex-shrink: 0;
 }
-
 .qcardBestLbl {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
 }
-
 .qcardBestAmt {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  color: var(--primary);
+  letter-spacing: -0.3px;
 }
-
+.qcardSave {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--success);
+  margin-top: 1px;
+}
 .qcardCta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #fff;
   background: var(--primary);
   border-radius: var(--radius-full);
-  padding: 8px 14px;
-  cursor: pointer;
+  padding: 10px 16px;
+  white-space: nowrap;
 }
-
-/* Bid details layout */
-.qbCard {
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-m);
-  padding: 20px;
-  margin-bottom: 16px;
-  position: relative;
-}
-
-.qbCardBest {
-  border-color: var(--primary);
-}
-
-.qbTag {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.qbLabelRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.qbAv {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-s);
-  background: var(--primary-light);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.qbLabel {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.qbFinal {
-  font-size: 9px;
-  font-weight: 800;
-  color: #fff;
-  background: #6D28D9;
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  margin-left: 8px;
-}
-
-.qbPrice {
-  margin-top: 14px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-}
-
-.qbPriceMain {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.qbPriceLbl {
-  font-size: 12px;
+.qcardCtaGhost {
+  background: var(--surface);
   color: var(--text-secondary);
+  border: 1.5px solid var(--border);
 }
-
-.qbPriceAmt {
-  font-size: 20px;
-  font-weight: 900;
-  color: var(--primary);
+.qcardCta i {
+  font-size: 15px;
 }
-
-.qbFoot {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  border-top: 1px dashed var(--border);
-  padding-top: 16px;
-}
-
-.qbtn {
-  height: 36px;
-  padding: 0 16px;
-  font-size: 12px;
+.qbadge {
+  font-size: 10.5px;
   font-weight: 700;
+  padding: 0 9px;
+  height: 24px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  border: 1.5px solid var(--border);
-  background: var(--card);
-  color: var(--text-secondary);
-  font-family: inherit;
-  transition: all 0.15s ease;
 }
-
-.qbtn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+.qbadgeNew {
+  background: rgba(26,107,181,0.1);
+  color: var(--info);
 }
-
-.qbtnPrimary {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+.qbadgeNegotiating {
+  background: rgba(200,146,10,0.12);
+  color: var(--amber);
 }
-
-.qbtnPrimary:hover {
-  background: var(--primary-dark);
+.qbadgeAccepted {
+  background: rgba(26,122,54,0.1);
+  color: var(--success);
 }
-
-/* Bid detailed items drawer */
-.qbDetails {
-  margin-top: 16px;
-  border-top: 1px dashed var(--border);
-  padding-top: 16px;
-}
-
-.qdSummary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.qdSum {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: var(--radius-full);
+.qbadgeAwaiting {
   background: var(--surface);
   color: var(--text-secondary);
-}
-
-.qdItems {
   border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.qdItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
-}
-
-.qdItem:last-child {
-  border-bottom: none;
-}
-
-.qdItemImg {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-s);
-  object-fit: cover;
-  background: var(--input-bg);
-}
-
-.qdItemMain {
-  flex: 1;
-  min-width: 0;
-}
-
-.qdItemName {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.qdItemTag {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.qdItemPrice {
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--primary);
-  text-align: right;
-}
-
-/* Modals inputs details */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modalContent {
-  background: var(--card);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-md);
-  width: 100%;
-  max-width: 500px;
-  overflow: hidden;
-}
-
-.modalHeader {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modalTitle {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.modalClose {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.modalBody {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.textareaField {
-  width: 100%;
-  min-height: 80px;
-  background: var(--input-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-m);
-  padding: 12px;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--text-primary);
-  outline: none;
-  resize: vertical;
-}
-
-.textareaField:focus {
-  border-color: var(--primary);
-}
-
-.revisionRow {
-  display: grid;
-  grid-template-columns: 1fr 100px;
-  gap: 10px;
-  align-items: center;
-}
-
-.revisionLabel {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.revisionInput {
-  height: 36px;
-  background: var(--input-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-s);
-  padding: 0 10px;
-  font-size: 12px;
-  outline: none;
-  text-align: right;
-  font-family: inherit;
-}
-
-.revisionInput:focus {
-  border-color: var(--primary);
 }

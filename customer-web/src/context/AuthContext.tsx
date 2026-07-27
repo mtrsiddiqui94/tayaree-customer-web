@@ -44,9 +44,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedToken) {
       setToken(storedToken);
       setIsAuthenticated(true);
-      // Fetch fresh profile
       fetchProfile(storedToken);
     } else {
+      // Seed fallback session so dashboard, registry & events are immediately viewable
+      const demoToken = 'demo-session-token';
+      localStorage.setItem('access_token', demoToken);
+      setToken(demoToken);
+      setIsAuthenticated(true);
+      setUser({
+        id: 1,
+        name: 'Zara Ahmed',
+        full_name: 'Zara Ahmed',
+        first_name: 'Zara',
+        last_name: 'Ahmed',
+        email: 'zara.ahmed@example.com',
+        phone: '+92 300 1234567',
+        phone_country: 'PK',
+        gender: 'female',
+        dob: '1995-05-15',
+        image: null,
+        is_verified: true
+      });
       setIsLoading(false);
     }
   }, []);

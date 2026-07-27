@@ -105,7 +105,7 @@
   color: var(--primary);
 }
 
-.fchip.active {
+.fchipActive {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
@@ -114,7 +114,7 @@
 /* events grid */
 .eventsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 18px;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .evtCover {
-  height: 132px;
+  height: 140px;
   position: relative;
   background: var(--input-bg);
   overflow: hidden;
@@ -214,13 +214,12 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 11px;
+  padding: 0 11px;
+  height: 26px;
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
-  height: 26px;
-  box-sizing: border-box;
 }
 
 .chip i {

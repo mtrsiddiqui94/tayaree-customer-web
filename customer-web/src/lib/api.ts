@@ -147,6 +147,13 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
     }),
 
+  postSafe: <T>(endpoint: string, body?: any, options?: RequestInit) =>
+    request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+    }).catch(() => null),
+
   put: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, {
       ...options,

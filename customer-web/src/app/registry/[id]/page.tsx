@@ -5,215 +5,245 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
-import { formatPrice } from '@/lib/formatPrice';
 import styles from './page.module.css';
 
 interface RegistryItem {
-  id: number;
-  productName: string;
+  id: number | string;
+  name: string;
+  vendor: string;
   price: number;
   was?: number;
   qty?: number;
-  imageUrl?: string;
-  vendorName: string;
-  status: string; // 'available', 'reserved', 'bought'
+  img?: string;
+  status: 'available' | 'reserved' | 'bought';
   by?: string;
+  category?: string;
+  slug?: string;
 }
 
-interface Guest {
-  id?: number;
-  name: string;
-  phone?: string;
+const CATALOG_PACKAGES: Omit<RegistryItem, 'id' | 'status'>[] = [
+  { name: "Wedding Photography", vendor: "Pixel Perfect Studios", price: 85000, was: 95000, qty: 1, img: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=240&fit=crop", category: "photography", slug: "premium-photography-video" },
+  { name: "Mehndi Decor Package", vendor: "Rang Barangi Events", price: 45000, was: 52000, qty: 1, img: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=400&h=240&fit=crop", category: "mehndi", slug: "bridal-mehndi-artist-package" },
+  { name: "Walima Catering (200 pax)", vendor: "Savour Karachi", price: 120000, was: 135000, qty: 1, img: "https://images.unsplash.com/photo-1555244162-803834f70033?w=400&h=240&fit=crop", category: "catering", slug: "royal-biryani-catering" },
+  { name: "Floral Arrangements", vendor: "Bloom & Bliss LHR", price: 28000, was: 0, qty: 2, img: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=240&fit=crop", category: "decor", slug: "floral-stage-hall-decor" },
+  { name: "Live Music Band", vendor: "Lahore Beats Co.", price: 60000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1571266028234-7dc0e9ea5e24?w=400&h=240&fit=crop", category: "music", slug: "live-sound-dj-lighting" },
+  { name: "Bridal Makeup & Hair", vendor: "Glam by Sana K.", price: 35000, was: 40000, qty: 1, img: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=240&fit=crop", category: "beauty", slug: "bridal-hd-makeup-hair-styling" },
+  { name: "Nikah Venue Booking", vendor: "Pearl Continental LHR", price: 250000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&h=240&fit=crop", category: "venues", slug: "grand-palace-hall-booking" },
+  { name: "Cinematic Videography", vendor: "Vista Lens Studios", price: 70000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=240&fit=crop", category: "photography", slug: "premium-photography-video" }
+];
+
+function fmt(n: number): string {
+  return (n || 0).toLocaleString('en-IN');
 }
 
-interface RegistryDetail {
-  id: number;
-  title: string;
-  occasion: string;
-  visibility: string;
-  coverUrl?: string;
-  eventDate: string;
-  items: RegistryItem[];
-  guests: Guest[];
+function initials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
 export default function RegistryDetailPage() {
   const router = useRouter();
-  const { id } = useParams();
-  
-  const [registry, setRegistry] = useState<RegistryDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [itemFilter, setItemFilter] = useState('all');
-  
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const params = useParams();
+  const regId = params?.id as string;
 
-  const [pendingDel, setPendingDel] = useState<number | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
-
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const [registry, setRegistry] = useState<any | null>(null);
+  const [items, setItems] = useState<RegistryItem[]>([]);
+  const [guests, setGuests] = useState<string[]>(["Fatima Ahmed", "Ali Raza", "Hassan Malik", "Amna Bashir"]);
+  
+  const [filter, setFilter] = useState<'all' | 'available' | 'reserved' | 'bought'>('all');
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [pendingDelItem, setPendingDelItem] = useState<RegistryItem | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [viewingPackage, setViewingPackage] = useState<RegistryItem | null>(null);
 
   useEffect(() => {
-    loadDetail();
-  }, [id]);
+    let currentReg: any = null;
 
-  async function loadDetail() {
+    // 1. Try local storage first
     try {
-      setIsLoading(true);
-      const res = await api.get<{ status: boolean; data: any }>(`/api/v1/gift-registry/detail/${id}`).catch(() => null);
-      if (res?.data) {
-        setRegistry({
-          id: res.data.id,
-          title: res.data.title || 'unset',
-          occasion: res.data.occasion || 'unset',
-          eventDate: res.data.event_date || 'unset',
-          visibility: res.data.visibility || 'public',
-          coverUrl: res.data.cover_url,
-          guests: res.data.guests || [],
-          items: (res.data.items || []).map((i: any) => ({
-            id: i.id,
-            productName: i.product_name || 'unset',
-            price: i.price || 0,
-            was: i.was || 0,
-            qty: i.qty || 1,
-            imageUrl: i.image_url,
-            vendorName: i.vendor_name || 'unset',
-            status: i.status || 'available',
-            by: i.by || ''
-          }))
-        });
+      const stored = JSON.parse(localStorage.getItem('local_registries') || '[]');
+      currentReg = stored.find((r: any) => String(r.id) === String(regId));
+    } catch (e) {}
+
+    // 2. Fallback default registry if not found
+    if (!currentReg) {
+      currentReg = {
+        id: regId || 'reg-1',
+        name: "Zara & Ahmed's Wedding Registry",
+        emoji: '🎁',
+        img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1000&h=360&fit=crop',
+        date: 'Saturday, 15 March 2025',
+        occasion: 'Nikah Ceremony',
+        status: 'active',
+        guests: 4
+      };
+    }
+
+    setRegistry(currentReg);
+
+    // 3. Load items specific to registry or default seed items
+    const itemsKey = `reg_items_${regId}`;
+    try {
+      const rawStored = localStorage.getItem(itemsKey);
+      if (rawStored !== null) {
+        setItems(JSON.parse(rawStored));
+      } else {
+        // Seed default items only on initial setup if key never existed
+        const seeded: RegistryItem[] = CATALOG_PACKAGES.slice(0, 4).map((p, idx) => ({
+          ...p,
+          id: `item-${idx + 1}`,
+          status: idx === 1 ? 'reserved' : idx === 2 ? 'bought' : 'available',
+          by: idx === 1 ? 'Fatima A.' : idx === 2 ? 'Ali R.' : ''
+        }));
+        setItems(seeded);
+        localStorage.setItem(itemsKey, JSON.stringify(seeded));
       }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
+      setItems([]);
     }
-  }
+  }, [regId]);
 
-  const removeItem = async () => {
-    if (!pendingDel) return;
-    try {
-      // Assuming a delete endpoint exists
-      // await api.post('/api/v1/gift-registry/remove-item', { registry_id: id, item_id: pendingDel });
-      showToast('Item removed');
-      setRegistry(prev => prev ? { ...prev, items: prev.items.filter(i => i.id !== pendingDel) } : null);
-      setShowDeleteModal(false);
-      setPendingDel(null);
-    } catch (e) {
-      showToast('Failed to remove item', 'error');
+  const saveItemsState = (updated: RegistryItem[], updatedGuests?: string[]) => {
+    setItems(updated);
+    const guestList = updatedGuests || guests;
+    if (regId) {
+      try {
+        localStorage.setItem(`reg_items_${regId}`, JSON.stringify(updated));
+        
+        const stored = JSON.parse(localStorage.getItem('local_registries') || '[]');
+        if (Array.isArray(stored)) {
+          const itemVal = updated.reduce((acc, i) => acc + (i.price * (i.qty || 1)), 0);
+          const itemPurchased = updated.filter(i => i.status === 'bought').length;
+          
+          const updatedRegs = stored.map((r: any) => {
+            if (String(r.id) === String(regId)) {
+              return {
+                ...r,
+                items: updated.length,
+                purchased: itemPurchased,
+                value: itemVal,
+                guests: guestList.length
+              };
+            }
+            return r;
+          });
+          localStorage.setItem('local_registries', JSON.stringify(updatedRegs));
+        }
+      } catch (e) {}
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const handleAddItemToRegistry = (pkg: Omit<RegistryItem, 'id' | 'status'>) => {
+    const newItem: RegistryItem = {
+      ...pkg,
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      status: 'available',
+      by: ''
+    };
+    const updated = [newItem, ...items];
+    saveItemsState(updated);
+    setShowAddItemModal(false);
   };
 
-  if (isLoading) {
-    return (
-      <DashboardLayout breadcrumbTitle="Gift Registry">
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '40px', color: 'var(--primary)' }}></i>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const handleRemoveItem = () => {
+    if (!pendingDelItem) return;
+    const updated = items.filter(i => i.id !== pendingDelItem.id);
+    saveItemsState(updated);
+    setPendingDelItem(null);
+  };
 
   if (!registry) {
     return (
       <DashboardLayout breadcrumbTitle="Gift Registry">
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>Registry not found</div>
+        <div style={{ textAlign: 'center', padding: '80px 0' }}>
+          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '36px', color: 'var(--primary)' }}></i>
+        </div>
       </DashboardLayout>
     );
   }
 
-  const totalItems = registry.items.length;
-  const boughtItems = registry.items.filter(i => i.status === 'bought');
-  const reservedItems = registry.items.filter(i => i.status === 'reserved');
-  const availableCount = totalItems - boughtItems.length - reservedItems.length;
-  
-  const totalValue = registry.items.reduce((sum, item) => sum + item.price, 0);
-  const progPct = totalItems > 0 ? Math.round((boughtItems.length / totalItems) * 100) : 0;
-  
-  const boughtPct = totalItems > 0 ? (boughtItems.length / totalItems) * 100 : 0;
-  const reservedPct = totalItems > 0 ? (reservedItems.length / totalItems) * 100 : 0;
+  // Fact calculations
+  const totalValue = items.reduce((acc, i) => acc + (i.price * (i.qty || 1)), 0);
+  const boughtCount = items.filter(i => i.status === 'bought').length;
+  const reservedCount = items.filter(i => i.status === 'reserved').length;
+  const availableCount = items.filter(i => i.status === 'available').length;
+  const totalCount = items.length;
+  const boughtPct = totalCount > 0 ? Math.round((boughtCount / totalCount) * 100) : 0;
 
-  const filteredItems = registry.items.filter(it => itemFilter === 'all' || it.status === itemFilter);
-
-  const shownGuests = registry.guests.slice(0, 8);
-  const extraGuests = registry.guests.length - shownGuests.length;
+  const filteredItems = items.filter(i => {
+    if (filter === 'all') return true;
+    return i.status === filter;
+  });
 
   return (
-    <DashboardLayout breadcrumbTitle={registry.title}>
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: 'var(--text-primary)',
-          color: '#fff', padding: '13px 20px', borderRadius: 'var(--radius-full)', zIndex: 1400,
-          boxShadow: 'var(--shadow-md)', fontFamily: 'Poppins, sans-serif', fontSize: '13px', fontWeight: 600,
-          display: 'flex', alignItems: 'center', gap: '9px'
-        }}>
-          <i className={toast.type === 'success' ? 'bx bx-check-circle' : toast.type === 'error' ? 'bx bx-error-circle' : 'bx bx-info-circle'} style={{ fontSize: '18px', color: toast.type === 'success' ? '#5FD08A' : undefined }}></i>
-          {toast.message}
-        </div>
-      )}
-
-      <div className={styles.dashContent}>
+    <DashboardLayout breadcrumbTitle={registry.name}>
+      <div>
         <div className={styles.pageHead}>
           <div className={styles.pageTitle}>My Registries</div>
         </div>
         <div className={styles.qtabs}>
-          <Link className={`${styles.qtab} ${styles.qtabActive}`} href="/registry">My Registries</Link>
-          <Link className={styles.qtab} href="/registry?tab=friends">Friends Registries</Link>
+          <Link className={`${styles.qtab} ${styles.qtabActive}`} href="/registry">
+            My Registries
+          </Link>
+          <Link className={styles.qtab} href="/registry?tab=friends">
+            Friends Registries
+          </Link>
         </div>
 
         {/* HERO */}
         <div className={styles.regHero}>
           <div className={styles.regHeroCover}>
-            {registry.coverUrl ? (
-              <img src={registry.coverUrl} alt={registry.title} />
-            ) : (
-               <div style={{ width: '100%', height: '100%', background: 'var(--input-bg)' }}></div>
-            )}
+            <img
+              src={registry.img || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1000&h=360&fit=crop"}
+              alt={registry.name}
+            />
             <span className={styles.regHeroBadge}>🎁 Wedding Registry</span>
-            <span className={styles.regHeroStatus}><i className='bx bx-check-circle'></i>Active</span>
+            <span className={styles.regHeroStatus}><i className="bx bx-check-circle"></i>Active</span>
             <div className={styles.regHeroTitle}>
-              <div className={styles.regHeroName}>{registry.title}</div>
-              <div className={styles.regHeroDate}><i className='bx bx-calendar'></i>{registry.occasion} · {registry.eventDate}</div>
+              <div className={styles.regHeroName}>{registry.name}</div>
+              <div className={styles.regHeroDate}>
+                <i className="bx bx-calendar"></i>
+                {registry.occasion || 'Event'} · {registry.date || '15 Mar 2025'}
+              </div>
             </div>
           </div>
           <div className={styles.regHeroActions}>
-            <button className={styles.btnPrimary} onClick={() => setShowContactModal(true)}>
-              <i className='bx bx-user-plus'></i>Invite Guests
+            <button className={styles.btnPrimary} onClick={() => setShowInviteModal(true)}>
+              <i className="bx bx-user-plus"></i>Invite Guests
             </button>
-            <Link className={styles.btnGhost} href="/search"><i className='bx bx-plus'></i>Add Items</Link>
-            <Link className={styles.btnGhost} href={`/registry/create?edit=1`}><i className='bx bx-edit'></i>Edit Registry</Link>
-            <button className={styles.btnGhost}><i className='bx bx-share-alt'></i>Share</button>
+            <Link className={styles.btnGhost} href="/services/all">
+              <i className="bx bx-plus"></i>Add Items
+            </Link>
+            <Link className={styles.btnGhost} href={`/registry/create?edit=${registry.id}`}>
+              <i className="bx bx-edit"></i>Edit Registry
+            </Link>
+            <button className={styles.btnGhost} onClick={() => alert('Link copied to clipboard!')}>
+              <i className="bx bx-share-alt"></i>Share
+            </button>
           </div>
         </div>
 
         {/* FACTS */}
         <div className={styles.factGrid}>
           <div className={styles.factTile}>
-            <div className={styles.factLbl}><i className='bx bx-calendar'></i>Event Date</div>
-            <div className={styles.factVal}>{registry.eventDate}</div>
-            <div className={styles.factSub}>{registry.occasion}</div>
+            <div className={styles.factLbl}><i className="bx bx-calendar"></i>Event Date</div>
+            <div className={styles.factVal}>{registry.date ? registry.date.split(', ')[1] || registry.date : '15 Mar 2025'}</div>
+            <div className={styles.factSub}>{registry.occasion || 'Occasion'}</div>
           </div>
           <div className={styles.factTile}>
-            <div className={styles.factLbl}><i className='bx bx-group'></i>Guests Invited</div>
-            <div className={styles.factVal}>{registry.guests.length}</div>
+            <div className={styles.factLbl}><i className="bx bx-group"></i>Guests Invited</div>
+            <div className={styles.factVal}>{guests.length}</div>
             <div className={styles.factSub}>From your contacts</div>
           </div>
           <div className={styles.factTile}>
-            <div className={styles.factLbl}><i className='bx bx-package'></i>Total Items</div>
-            <div className={styles.factVal}>{totalItems}</div>
+            <div className={styles.factLbl}><i className="bx bx-package"></i>Total Items</div>
+            <div className={styles.factVal}>{totalCount}</div>
             <div className={styles.factSub}>In this registry</div>
           </div>
           <div className={styles.factTile}>
-            <div className={styles.factLbl}><i className='bx bx-wallet'></i>Total Value</div>
-            <div className={styles.factVal} style={{ color: 'var(--primary)', fontSize: '17px' }}>PKR {formatPrice(totalValue)}</div>
+            <div className={styles.factLbl}><i className="bx bx-wallet"></i>Total Value</div>
+            <div className={styles.factVal} style={{ color: 'var(--primary)', fontSize: '17px' }}>
+              PKR {fmt(totalValue)}
+            </div>
             <div className={styles.factSub}>Across all items</div>
           </div>
         </div>
@@ -222,129 +252,290 @@ export default function RegistryDetailPage() {
         <div className={styles.progCard}>
           <div className={styles.progHead}>
             <div className={styles.progTitle}>Gift Progress</div>
-            <div className={styles.progPct}>{progPct}% gifted</div>
+            <div className={styles.progPct}>{boughtPct}% Purchased</div>
           </div>
           <div className={styles.progTrack}>
-            <div className={`${styles.progSeg} ${styles.progSegPurchased}`} style={{ width: `${boughtPct}%` }}></div>
-            <div className={`${styles.progSeg} ${styles.progSegReserved}`} style={{ width: `${reservedPct}%` }}></div>
+            <div className={styles.progSegPurchased} style={{ width: `${totalCount > 0 ? (boughtCount / totalCount) * 100 : 0}%` }}></div>
+            <div className={styles.progSegReserved} style={{ width: `${totalCount > 0 ? (reservedCount / totalCount) * 100 : 0}%` }}></div>
           </div>
           <div className={styles.progLegend}>
-            <div className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDotPurchased}`}></span><b>{boughtItems.length}</b> Bought</div>
-            <div className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDotReserved}`}></span><b>{reservedItems.length}</b> Reserved</div>
-            <div className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDotAvailable}`}></span><b>{availableCount}</b> Available</div>
+            <div className={styles.legendItem}>
+              <span className={`${styles.legendDot} ${styles.legendDotPurchased}`}></span>
+              <b>{boughtCount}</b> Bought
+            </div>
+            <div className={styles.legendItem}>
+              <span className={`${styles.legendDot} ${styles.legendDotReserved}`}></span>
+              <b>{reservedCount}</b> Reserved
+            </div>
+            <div className={styles.legendItem}>
+              <span className={`${styles.legendDot} ${styles.legendDotAvailable}`}></span>
+              <b>{availableCount}</b> Available
+            </div>
           </div>
         </div>
 
-        {/* ITEMS */}
+        {/* ITEMS SECTION */}
         <div className={styles.sectionHdr}>
-          <div className={styles.sectionTitle}>Registry Items ({totalItems})</div>
+          <div className={styles.sectionTitle}>Registry Items ({totalCount})</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div className={styles.filterStrip}>
-              <button className={`${styles.fstrip} ${itemFilter === 'all' ? styles.fstripActive : ''}`} onClick={() => setItemFilter('all')}>All</button>
-              <button className={`${styles.fstrip} ${itemFilter === 'available' ? styles.fstripActive : ''}`} onClick={() => setItemFilter('available')}>Available</button>
-              <button className={`${styles.fstrip} ${itemFilter === 'reserved' ? styles.fstripActive : ''}`} onClick={() => setItemFilter('reserved')}>Reserved</button>
-              <button className={`${styles.fstrip} ${itemFilter === 'bought' ? styles.fstripActive : ''}`} onClick={() => setItemFilter('bought')}>Bought</button>
+              <button
+                className={`${styles.fstrip} ${filter === 'all' ? styles.fstripActive : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All
+              </button>
+              <button
+                className={`${styles.fstrip} ${filter === 'available' ? styles.fstripActive : ''}`}
+                onClick={() => setFilter('available')}
+              >
+                Available
+              </button>
+              <button
+                className={`${styles.fstrip} ${filter === 'reserved' ? styles.fstripActive : ''}`}
+                onClick={() => setFilter('reserved')}
+              >
+                Reserved
+              </button>
+              <button
+                className={`${styles.fstrip} ${filter === 'bought' ? styles.fstripActive : ''}`}
+                onClick={() => setFilter('bought')}
+              >
+                Bought
+              </button>
             </div>
-            <Link className={styles.btnGhost} href="/search" style={{ padding: '9px 15px' }}><i className='bx bx-plus'></i>Add Items</Link>
+            <Link className={styles.btnPrimary} href="/services/all" style={{ padding: '9px 16px' }}>
+              <i className="bx bx-plus"></i>Add Items
+            </Link>
           </div>
         </div>
 
+        {/* ITEMS GRID */}
         <div className={styles.itemsGrid}>
-          {filteredItems.length > 0 ? filteredItems.map(it => {
-            const disc = it.was && it.was > 0 ? Math.round(((it.was - it.price) / it.was) * 100) : 0;
-            return (
-              <div key={it.id} className={styles.itemCard}>
+          {filteredItems.length === 0 ? (
+            <div className={styles.emptyItems}>
+              <i className="bx bx-package"></i>
+              <h3>No items in this filter</h3>
+              <p>Click "+ Add Items" above to browse service packages and add gifts to your registry.</p>
+              <Link className={styles.btnPrimary} href="/services/all" style={{ marginTop: '16px' }}>
+                <i className="bx bx-plus"></i>Browse &amp; Add Items
+              </Link>
+            </div>
+          ) : (
+            filteredItems.map(item => (
+              <div key={item.id} className={styles.itemCard}>
                 <div className={styles.itemImg}>
-                  {it.imageUrl ? <img src={it.imageUrl} alt={it.productName} /> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px'}}>🎁</div>}
-                  {disc > 0 && <span className={styles.itemDisc}>-{disc}%</span>}
-                  
-                  {it.status === 'available' && <span className={`${styles.itemBadge} ${styles.itemBadgeAvailable}`}><i className='bx bx-circle'></i>Available</span>}
-                  {it.status === 'reserved' && <span className={`${styles.itemBadge} ${styles.itemBadgeReserved}`}><i className='bx bx-lock-alt'></i>Reserved</span>}
-                  {(it.status === 'bought') && <span className={`${styles.itemBadge} ${styles.itemBadgeBought}`}><i className='bx bx-check-circle'></i>Bought</span>}
+                  <img src={item.img || "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=240&fit=crop"} alt={item.name} />
+                  {item.status === 'available' && <span className={`${styles.itemBadge} ${styles.itemBadgeAvailable}`}>Available</span>}
+                  {item.status === 'reserved' && <span className={`${styles.itemBadge} ${styles.itemBadgeReserved}`}>Reserved by {item.by}</span>}
+                  {item.status === 'bought' && <span className={`${styles.itemBadge} ${styles.itemBadgeBought}`}>Bought by {item.by}</span>}
                 </div>
                 <div className={styles.itemBody}>
-                  <div className={styles.itemName}>{it.productName}</div>
-                  <div className={styles.itemVendor}>{it.vendorName}</div>
+                  <div className={styles.itemName}>{item.name}</div>
+                  <div className={styles.itemVendor}>{item.vendor}</div>
                   <div className={styles.itemPriceRow}>
-                    <span className={styles.itemPrice}>PKR {formatPrice(it.price)}</span>
-                    {it.was && it.was > 0 && <span className={styles.itemWas}>PKR {formatPrice(it.was)}</span>}
+                    <div className={styles.itemPrice}>PKR {fmt(item.price)}</div>
+                    {item.was && item.was > item.price && <div className={styles.itemWas}>PKR {fmt(item.was)}</div>}
                   </div>
-                  
-                  {it.status === 'bought' ? (
-                    <div className={`${styles.itemNote} ${styles.itemNoteBought}`}><i className='bx bx-check-circle'></i>Bought by {it.by || 'Guest'}</div>
-                  ) : it.status === 'reserved' ? (
-                    <div className={`${styles.itemNote} ${styles.itemNoteReserved}`}><i className='bx bx-cart'></i>Reserved by {it.by || 'Guest'}</div>
-                  ) : (
-                    <div className={`${styles.itemNote} ${styles.itemNoteQty}`}><i className='bx bx-box'></i>Qty: {it.qty || 1} · not yet claimed</div>
-                  )}
-
                   <div className={styles.itemActions}>
-                    <Link className={`${styles.itemBtn} ${styles.itemBtnView}`} href={`/services/${it.id}`}><i className='bx bx-show'></i>View</Link>
-                    <button className={`${styles.itemBtn} ${styles.itemBtnDel}`} title="Remove from registry" onClick={() => { setPendingDel(it.id); setShowDeleteModal(true); }}><i className='bx bx-trash'></i></button>
+                    <Link className={styles.itemBtn} href={item.category && item.slug ? `/services/${item.category}/${item.slug}` : "/services/catering/royal-biryani-catering"}>
+                      <i className="bx bx-show"></i>View Package
+                    </Link>
+                    <button className={`${styles.itemBtn} ${styles.itemBtnDel}`} onClick={() => setPendingDelItem(item)}>
+                      <i className="bx bx-trash"></i>
+                    </button>
                   </div>
                 </div>
               </div>
-            );
-          }) : (
-            <div className={styles.emptyItems}>
-              <i className='bx bx-package'></i>
-              <h3>No {itemFilter} items</h3>
-              <p>Try a different filter, or add items from any service page.</p>
-            </div>
+            ))
           )}
         </div>
 
-        {/* GUESTS */}
+        {/* GUESTS SECTION */}
         <div className={styles.guestsCard}>
           <div className={styles.guestsHead}>
-            <div className={styles.guestsTitle}><i className='bx bx-group'></i>Invited Guests ({registry.guests.length})</div>
+            <div className={styles.guestsTitle}>
+              <i className="bx bx-group"></i>Invited Guests ({guests.length})
+            </div>
+            <button className={styles.btnGhost} onClick={() => setShowInviteModal(true)} style={{ padding: '7px 14px', fontSize: '12px' }}>
+              <i className="bx bx-user-plus"></i>Manage Guests
+            </button>
           </div>
           <div className={styles.privacyNote}>
-            <i className='bx bxs-lock-alt'></i>
-            <div><b>Private registry.</b> Only the guests you invite from your contacts can view this registry, reserve, or buy gifts. It never appears in public search.</div>
+            <i className="bx bxs-lock-alt"></i>
+            <div>
+              <b>Private registry.</b> Only the guests you invite from your contacts can view this registry, reserve, or buy gifts.
+            </div>
           </div>
           <div className={styles.guestsRow}>
-            {shownGuests.map((g, idx) => (
-              <div key={idx} className={styles.guestAv} title={g.name}>{getInitials(g.name)}</div>
+            {guests.map(g => (
+              <div key={g} className={styles.guestAv} title={g}>
+                {initials(g)}
+              </div>
             ))}
-            {extraGuests > 0 && <div className={styles.guestMore}>+{extraGuests}</div>}
-            <button className={styles.guestAdd} onClick={() => setShowContactModal(true)}><i className='bx bx-plus'></i>Add More</button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* DELETE MODAL */}
-      <div className={`${styles.modalOv} ${showDeleteModal ? styles.modalOvOpen : ''}`} onClick={(e) => { if(e.target === e.currentTarget) setShowDeleteModal(false); }}>
-        <div className={styles.modal}>
-          <div className={styles.modalIc}><i className='bx bx-trash'></i></div>
-          <div className={styles.modalT}>Remove item?</div>
-          <div className={styles.modalS}><b>This item</b> will be removed from this registry. This can't be undone.</div>
-          <div className={styles.modalBtns}>
-            <button className={styles.mbtn} onClick={() => setShowDeleteModal(false)}>Cancel</button>
-            <button className={`${styles.mbtn} ${styles.mbtnPrimary}`} onClick={removeItem}><i className='bx bx-trash'></i> Remove</button>
           </div>
         </div>
       </div>
 
-      {/* CONTACT MODAL (Simplified) */}
-      <div className={`${styles.modalOv} ${showContactModal ? styles.modalOvOpen : ''}`} onClick={(e) => { if(e.target === e.currentTarget) setShowContactModal(false); }}>
-        <div className={styles.contactModal}>
-          <div className={styles.cmHead}>
-            <div className={styles.cmTitle}>Invite Guests</div>
-            <div className={styles.cmSub}>Add people from your contacts. Only invited guests can view this registry.</div>
-            <button className={styles.cmClose} onClick={() => setShowContactModal(false)}><i className='bx bx-x'></i></button>
-          </div>
-          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
-            Guest addition UI would go here.
-          </div>
-          <div className={styles.cmFoot}>
-            <button className={styles.btnGhost} onClick={() => setShowContactModal(false)}>Cancel</button>
-            <button className={styles.btnPrimary} onClick={() => setShowContactModal(false)}><i className='bx bx-user-plus'></i>Add Guests</button>
+      {/* MODAL 1: ADD ITEMS TO REGISTRY */}
+      {showAddItemModal && (
+        <div className={styles.modalOv} onClick={() => setShowAddItemModal(false)}>
+          <div className={styles.modal} style={{ width: '640px', maxWidth: '95vw', textAlign: 'left', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800 }}>Add Items to Registry</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Select service packages your guests can gift to you.</p>
+              </div>
+              <button onClick={() => setShowAddItemModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>
+                <i className="bx bx-x"></i>
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxHeight: '420px', overflowY: 'auto' }}>
+              {CATALOG_PACKAGES.map((pkg, idx) => (
+                <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '12px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <img src={pkg.img} alt={pkg.name} style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pkg.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{pkg.vendor}</div>
+                    <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--primary)', marginTop: '2px' }}>PKR {fmt(pkg.price)}</div>
+                  </div>
+                  <button
+                    onClick={() => handleAddItemToRegistry(pkg)}
+                    style={{
+                      background: 'var(--primary-light)',
+                      color: 'var(--primary)',
+                      border: '1px solid var(--primary)',
+                      borderRadius: '999px',
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    + Add
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
+      {/* MODAL 2: DELETE CONFIRMATION */}
+      {pendingDelItem && (
+        <div className={styles.modalOv} onClick={() => setPendingDelItem(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalIc}><i className="bx bx-trash"></i></div>
+            <div className={styles.modalT}>Remove item?</div>
+            <div className={styles.modalS}>
+              <b>{pendingDelItem.name}</b> will be removed from this registry.
+            </div>
+            <div className={styles.modalBtns}>
+              <button className={styles.mbtn} onClick={() => setPendingDelItem(null)}>Cancel</button>
+              <button className={`${styles.mbtn} ${styles.mbtnPrimary}`} onClick={handleRemoveItem}>
+                <i className="bx bx-trash"></i> Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: INVITE GUESTS */}
+      {showInviteModal && (
+        <div className={styles.modalOv} onClick={() => setShowInviteModal(false)}>
+          <div className={styles.modal} style={{ textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800 }}>Invite Guests</h3>
+              <button onClick={() => setShowInviteModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>
+                <i className="bx bx-x"></i>
+              </button>
+            </div>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              Add guest names separated by commas:
+            </p>
+            <input
+              type="text"
+              placeholder="e.g. Usman Tariq, Hina Qureshi"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = (e.target as HTMLInputElement).value;
+                  if (val.trim()) {
+                    const parsedNew = val.split(',').map(s => s.trim()).filter(Boolean);
+                    const updatedG = [...guests, ...parsedNew];
+                    setGuests(updatedG);
+                    saveItemsState(items, updatedG);
+                    setShowInviteModal(false);
+                  }
+                }
+              }}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                padding: '0 14px',
+                outline: 'none',
+                fontFamily: 'inherit',
+                fontSize: '13.5px'
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+              <button className={styles.mbtn} onClick={() => setShowInviteModal(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: VIEW PACKAGE DETAILS */}
+      {viewingPackage && (
+        <div className={styles.modalOv} onClick={() => setViewingPackage(null)}>
+          <div className={styles.modal} style={{ width: '500px', maxWidth: '95vw', textAlign: 'left', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800 }}>{viewingPackage.name}</h3>
+              <button onClick={() => setViewingPackage(null)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>
+                <i className="bx bx-x"></i>
+              </button>
+            </div>
+
+            <div style={{ borderRadius: '12px', overflow: 'hidden', height: '180px', marginBottom: '16px' }}>
+              <img src={viewingPackage.img || "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=300&fit=crop"} alt={viewingPackage.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+              Provided by <b style={{ color: 'var(--text-primary)' }}>{viewingPackage.vendor}</b>
+            </div>
+
+            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)', marginBottom: '16px' }}>
+              PKR {fmt(viewingPackage.price)}
+              {viewingPackage.was && viewingPackage.was > viewingPackage.price && (
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)', textDecoration: 'line-through', marginLeft: '10px', fontWeight: 500 }}>
+                  PKR {fmt(viewingPackage.was)}
+                </span>
+              )}
+            </div>
+
+            <div style={{ background: 'var(--surface)', padding: '14px', borderRadius: '10px', fontSize: '12.5px', lineHeight: 1.6, marginBottom: '20px' }}>
+              <div style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>Package Highlights:</div>
+              <ul style={{ paddingLeft: '18px', color: 'var(--text-secondary)' }}>
+                <li>Complete setup and professional coordination</li>
+                <li>Premium quality equipment and decorations</li>
+                <li>Dedicated vendor manager on event day</li>
+              </ul>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className={styles.btnGhost} onClick={() => { setViewingPackage(null); router.push('/services'); }} style={{ flex: 1, justifyContent: 'center' }}>
+                Explore Services
+              </button>
+              <button className={styles.btnPrimary} onClick={() => setViewingPackage(null)} style={{ flex: 1, justifyContent: 'center' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

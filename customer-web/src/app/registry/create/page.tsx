@@ -1,506 +1,649 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
 import styles from './page.module.css';
 
 interface UserEvent {
-  id: number;
-  title: string;
-  event_date: string;
+  id: string;
+  name: string;
+  date: string;
+  short: string;
 }
 
-interface GuestContact {
-  id: number;
+interface Contact {
   name: string;
   phone: string;
-  isAdded: boolean;
 }
 
-const MOCK_CONTACTS: GuestContact[] = [
-  { id: 1, name: "Ali Raza", phone: "300 1234567", isAdded: false },
-  { id: 2, name: "Sadaf Jamil", phone: "321 9876543", isAdded: false },
-  { id: 3, name: "Zainab Shah", phone: "333 5554433", isAdded: false },
-  { id: 4, name: "Osman Khalid", phone: "302 7778899", isAdded: false }
+const DEFAULT_EVENTS: UserEvent[] = [
+  { id: "walima", name: "Walima Reception", date: "Friday, 20 June 2025", short: "Walima · 20 Jun 2025" },
+  { id: "nikah", name: "Nikah Ceremony", date: "Saturday, 15 March 2025", short: "Nikah · 15 Mar 2025" },
+  { id: "mehndi", name: "Mehndi Night", date: "Tuesday, 17 June 2025", short: "Mehndi · 17 Jun 2025" },
+  { id: "bridal", name: "Bridal Shower", date: "Monday, 28 April 2025", short: "Bridal · 28 Apr 2025" }
 ];
+
+const DEFAULT_CONTACTS: Contact[] = [
+  { name: "Fatima Ahmed", phone: "+92 300 1234567" },
+  { name: "Ali Raza", phone: "+92 301 2345678" },
+  { name: "Hassan Malik", phone: "+92 302 3456789" },
+  { name: "Amna Bashir", phone: "+92 303 4567890" },
+  { name: "Bilal Khan", phone: "+92 304 5678901" },
+  { name: "Sara Nadeem", phone: "+92 305 6789012" },
+  { name: "Usman Tariq", phone: "+92 306 7890123" },
+  { name: "Hina Qureshi", phone: "+92 307 8901234" },
+  { name: "Zoya Iqbal", phone: "+92 308 9012345" },
+  { name: "Danish Ali", phone: "+92 309 0123456" }
+];
+
+function initials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function formatDatePretty(dStr: string): string {
+  if (!dStr) return 'Friday, 20 June 2025';
+  if (dStr.includes(',') && dStr.split(' ').length >= 3) return dStr;
+  try {
+    const parts = dStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const dt = new Date(year, monthIdx, day);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      if (months[monthIdx]) {
+        return `${days[dt.getDay() || 0]}, ${day} ${months[monthIdx]} ${year}`;
+      }
+    }
+  } catch (e) {}
+  return dStr;
+}
 
 export default function CreateRegistryPage() {
   const router = useRouter();
+  const fileInputRef = useRef<any>(null);
+  const dateInputRef = useRef<any>(null);
 
-  // Profile data fallback
-  const [profileName, setProfileName] = useState('Adnan Siddiqui');
-  const [profileEmail, setProfileEmail] = useState('adnan@email.com');
+  const [userEvents, setUserEvents] = useState<UserEvent[]>(DEFAULT_EVENTS);
+  const [selectedEventId, setSelectedEventId] = useState<string>(DEFAULT_EVENTS[0].id);
 
-  // Form states
+  // Registry Name starts EMPTY with placeholder
   const [registryName, setRegistryName] = useState('');
-  const [events, setEvents] = useState<UserEvent[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<number | ''>('');
-  const [eventDate, setEventDate] = useState('—');
+  
+  // Custom Date selection state
+  const [customDate, setCustomDate] = useState<string>('');
+  
+  // Cover Image upload & preview modal state
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
-  // Guest list states
-  const [guestList, setGuestList] = useState<GuestContact[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [addedGuests, setAddedGuests] = useState<GuestContact[]>([]);
+  // Selected Guests state
+  const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
+  const [contactSearch, setContactSearch] = useState('');
+  const [showAddNew, setShowAddNew] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
 
-  // Add manually form state
-  const [showAddManual, setShowAddManual] = useState(false);
-  const [newGuestName, setNewGuestName] = useState('');
-  const [newGuestPhone, setNewGuestPhone] = useState('');
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const loadFormData = async () => {
+    async function loadEvents() {
       try {
-        // 1. Load user profile details
-        interface ProfileData { full_name?: string; email?: string; }
-        const profileRes = await api.get<{ status: boolean; data: ProfileData }>('/api/v1/profile/me').catch(() => null);
-        if (profileRes?.status && profileRes.data) {
-          setProfileName(profileRes.data.full_name || 'Adnan Siddiqui');
-          setProfileEmail(profileRes.data.email || 'adnan@email.com');
-        }
-
-        // 2. Load events list to link registry
-        interface EventItem { id?: number; title?: string; event_date?: string; }
-        const eventsRes = await api.get<{ status: boolean; data: EventItem[] }>('/api/v1/gift-registry/events/list').catch(() => null);
-        if (eventsRes?.status && eventsRes.data && eventsRes.data.length > 0) {
-          const mappedEvents = eventsRes.data.map((e, idx) => ({
-            id: e.id || idx + 1,
-            title: e.title || 'Wedding Planner',
-            event_date: e.event_date || '2026-03-15'
+        const stored = JSON.parse(localStorage.getItem('local_events') || '[]');
+        if (Array.isArray(stored) && stored.length > 0) {
+          const mapped: UserEvent[] = stored.map((e: any) => ({
+            id: String(e.id),
+            name: e.event_name || 'Event',
+            date: formatDatePretty(e.event_date),
+            short: `${(e.event_name || 'Event').slice(0, 12)} · ${formatDatePretty(e.event_date).split(', ')[1] || 'Date'}`
           }));
-          setEvents(mappedEvents);
-          
-          // Auto-select first event
-          setSelectedEventId(mappedEvents[0].id);
-          setEventDate(mappedEvents[0].event_date);
+          setUserEvents([...mapped, ...DEFAULT_EVENTS]);
+          setSelectedEventId(mapped[0].id);
         }
+      } catch (e) {}
 
-        // Initialize guest contacts
-        setGuestList(MOCK_CONTACTS);
-      } catch (e) {
-        console.error(e);
+      const res = await api.safeCall(() => api.get<any>('/api/v1/events'));
+      if (res.success && res.data) {
+        const apiList = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        if (apiList.length > 0) {
+          const mapped: UserEvent[] = apiList.map((e: any) => ({
+            id: String(e.id || e._id),
+            name: e.event_name || 'Event',
+            date: formatDatePretty(e.event_date),
+            short: `${(e.event_name || 'Event').slice(0, 12)} · ${formatDatePretty(e.event_date).split(', ')[1] || 'Date'}`
+          }));
+          setUserEvents(mapped);
+          setSelectedEventId(mapped[0].id);
+        }
       }
+    }
+
+    loadEvents();
+  }, []);
+
+  const activeEvent = userEvents.find(e => e.id === selectedEventId) || userEvents[0] || DEFAULT_EVENTS[0];
+  const displayDate = customDate ? formatDatePretty(customDate) : activeEvent.date;
+
+  // DYNAMIC STEP COMPONENT CALCULATIONS
+  const isStep1Done = registryName.trim().length > 0 || selectedEventId !== '';
+  const isStep2Done = selectedGuests.length > 0;
+
+  const openDatePicker = () => {
+    const el = dateInputRef.current;
+    if (el) {
+      if ('showPicker' in el) {
+        try {
+          (el as any).showPicker();
+        } catch (e) {
+          el.focus();
+        }
+      } else {
+        el.focus();
+      }
+    }
+  };
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        setCoverPhoto(evt.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddGuest = (name: string) => {
+    if (!selectedGuests.includes(name)) {
+      setSelectedGuests(prev => [...prev, name]);
+    }
+  };
+
+  const handleRemoveGuest = (name: string) => {
+    setSelectedGuests(prev => prev.filter(g => g !== name));
+  };
+
+  const handleAddNewContact = () => {
+    if (!newName.trim()) return;
+    const name = newName.trim();
+    handleAddGuest(name);
+    setNewName('');
+    setNewPhone('');
+    setShowAddNew(false);
+  };
+
+  const handleSubmit = async () => {
+    const finalName = registryName.trim() || `${activeEvent.name} Registry`;
+
+    setIsSubmitting(true);
+
+    const safeImg = (coverPhoto && coverPhoto.length > 50000)
+      ? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop'
+      : (coverPhoto || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop');
+
+    const newReg = {
+      id: `reg-${Date.now()}`,
+      name: finalName,
+      emoji: '🎁',
+      img: safeImg,
+      date: displayDate,
+      occasion: activeEvent.name,
+      status: 'active',
+      bucket: 'current',
+      guests: selectedGuests.length || 1,
+      items: 0,
+      purchased: 0,
+      value: 0
     };
-
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login?redirect=/registry/create');
-      return;
-    }
-    loadFormData();
-  }, [router]);
-
-
-
-  const handleEventChange = (eventIdVal: string) => {
-    if (eventIdVal === '') {
-      setSelectedEventId('');
-      setEventDate('—');
-      return;
-    }
-    const id = Number(eventIdVal);
-    setSelectedEventId(id);
-    const selected = events.find(e => e.id === id);
-    if (selected) {
-      setEventDate(selected.event_date);
-    }
-  };
-
-  const handleAddGuest = (contact: GuestContact) => {
-    setGuestList(prev => prev.map(c => c.id === contact.id ? { ...c, isAdded: true } : c));
-    setAddedGuests(prev => [...prev, contact]);
-  };
-
-  const handleRemoveGuest = (id: number) => {
-    setGuestList(prev => prev.map(c => c.id === id ? { ...c, isAdded: false } : c));
-    setAddedGuests(prev => prev.filter(g => g.id !== id));
-  };
-
-  const handleAddManualGuest = () => {
-    if (!newGuestName.trim() || !newGuestPhone.trim()) {
-      alert('Please fill out name and phone number fields.');
-      return;
-    }
-    const newGuest: GuestContact = {
-      id: Date.now(),
-      name: newGuestName.trim(),
-      phone: newGuestPhone.trim(),
-      isAdded: true
-    };
-    setAddedGuests(prev => [...prev, newGuest]);
-    setNewGuestName('');
-    setNewGuestPhone('');
-    setShowAddManual(false);
-    showToast(`${newGuest.name} added to guest checklist!`);
-  };
-
-  const handleSubmitRegistry = async () => {
-    if (!registryName.trim()) {
-      showToast('Please enter a registry name.', 'error');
-      return;
-    }
 
     try {
-      setIsSaving(true);
-      const formData = new FormData();
-      formData.append('registry_name', registryName.trim());
-      formData.append('event_id', selectedEventId ? selectedEventId.toString() : '');
-      // guests would ideally be sent as JSON string or individual array fields depending on backend
-      formData.append('guests', JSON.stringify(addedGuests.map(g => ({ name: g.name, phone: g.phone }))));
-      formData.append('is_default', '0');
-      formData.append('is_active', '1');
-      // If photo was supported: formData.append('gift_registry_group_icon', photoFile);
-
-      const res = await api.post<{ status: boolean; message?: string }>('/api/v1/gift-registry/store', formData)
-        .catch(() => ({ status: true, message: 'Mock success' }));
-
-      if (res.status) {
-        showToast(res.message || 'Gift registry created successfully!');
-        setTimeout(() => router.push('/registry'), 1500);
-      }
+      const existing = JSON.parse(localStorage.getItem('local_registries') || '[]');
+      localStorage.setItem('local_registries', JSON.stringify([newReg, ...existing]));
     } catch (e) {
-      console.error(e);
-      showToast('Error creating registry list.', 'error');
-    } finally {
-      setIsSaving(false);
+      console.warn('localStorage quota exceeded, clearing old items to fit new registry');
+      try {
+        localStorage.removeItem('local_registries');
+        localStorage.setItem('local_registries', JSON.stringify([newReg]));
+      } catch (err) {
+        console.error('Failed to write to localStorage', err);
+      }
     }
+
+    await api.safeCall(() => api.post('/api/v1/gift-registry', {
+      title: finalName,
+      event_id: selectedEventId,
+      event_date: displayDate,
+      guests: selectedGuests
+    }));
+
+    setIsSubmitting(false);
+    router.push(`/registry`);
   };
 
-  const filteredContacts = guestList.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredContacts = DEFAULT_CONTACTS.filter(c =>
+    c.name.toLowerCase().includes(contactSearch.toLowerCase())
   );
 
   return (
-    <>
-      <Header />
-
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '20px',
-          backgroundColor: toast.type === 'success' ? 'var(--success)' : toast.type === 'error' ? 'var(--primary)' : '#0277bd',
-          color: '#fff',
-          padding: '12px 24px',
-          borderRadius: '8px',
-          zIndex: 10000,
-          boxShadow: 'var(--shadow-md)',
-          fontFamily: 'Poppins, sans-serif',
-          fontSize: '13px',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <i className={toast.type === 'success' ? 'bx bx-check-circle' : toast.type === 'error' ? 'bx bx-error-circle' : 'bx bx-info-circle'} style={{ fontSize: '18px' }}></i>
-          {toast.message}
-        </div>
-      )}
-
-      <main className={styles.page}>
-        <div className={styles.breadcrumb}>
-          <Link href="/">Home</Link>
-          <span className={styles.sep}>/</span>
-          <Link href="/registry">Gift Registry</Link>
-          <span className={styles.sep}>/</span>
-          <span className={styles.current}>Create Registry</span>
+    <DashboardLayout breadcrumbTitle="Create Registry">
+      <div>
+        <div className={styles.pageHead}>
+          <h1 className={styles.pageTitle}>Create Gift Registry</h1>
+          <p className={styles.pageSub}>
+            Set up your registry, invite guests, then add the gifts you'd love to receive.
+          </p>
         </div>
 
-        <div className={styles.dashLayout}>
-          {/* LEFT COLUMN: Sidebar Menu */}
-          <aside className={styles.sidebar}>
-            <div className={styles.sidebarCard}>
-              <div className={styles.sidebarProfile}>
-                <div className={styles.sidebarAvatar}>
-                  {profileName.charAt(0).toUpperCase()}
+        <div className={styles.crGrid}>
+          {/* LEFT FORM */}
+          <div className={styles.crMain}>
+            {/* REGISTRY DETAILS CARD */}
+            <div className={styles.card}>
+              <div className={styles.cardPad}>
+                <div className={styles.cardTitle}>
+                  <span className={styles.ctIc}><i className="bx bx-gift"></i></span>
+                  Registry details
                 </div>
-                <h4 className={styles.sidebarName}>{profileName}</h4>
-                <p className={styles.sidebarEmail}>{profileEmail}</p>
-              </div>
+                <div className={styles.cardSub}>Give it a name and connect it to one of your events.</div>
 
-              <nav className={styles.sidebarNav}>
-                <div className={styles.sidebarNavLabel}>Activities</div>
-                <Link className={styles.sidebarNavItem} href="/orders">
-                  <i className="bx bx-receipt"></i> Orders <span className={styles.sidebarNavBadge}>12</span>
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/profile/deliveries">
-                  <i className="bx bx-package"></i> Deliveries
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/profile/payments">
-                  <i className="bx bx-credit-card"></i> Payments
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/quotes">
-                  <i className="bx bx-file-blank"></i> Quotes
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/events">
-                  <i className="bx bx-calendar"></i> Events
-                </Link>
-                <Link className={`${styles.sidebarNavItem} ${styles.sidebarNavItemActive}`} href="/registry">
-                  <i className="bx bx-gift"></i> Registries
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/wishlist">
-                  <i className="bx bx-heart"></i> Wish List
-                </Link>
-                <Link className={styles.sidebarNavItem} href="/notifications">
-                  <i className="bx bx-bell"></i> Notifications
-                </Link>
-              </nav>
-            </div>
-          </aside>
-
-          {/* RIGHT COLUMN: Creation Form Content */}
-          <div className={styles.dashContent}>
-            <div className={styles.pageHead}>
-              <h2 className={styles.pageTitle}>Create Gift Registry</h2>
-              <p className={styles.pageSub}>Set up your registry, invite guests, then add the gifts you&apos;d love to receive.</p>
-            </div>
-
-            <div className={styles.crGrid}>
-              <div className={styles.crMain}>
-                {/* Card 1: Registry Details */}
-                <div className={styles.card}>
-                  <div className={styles.cardPad}>
-                    <div className={styles.cardTitle}>
-                      <span className={styles.ctIc}>
-                        <i className="bx bx-gift"></i>
-                      </span>
-                      Registry details
-                    </div>
-                    <p className={styles.cardSub}>Give it a name and connect it to one of your events.</p>
-
-                    <div className={styles.formGroup}>
-                      <span className={styles.formLabel}>Registry Name</span>
-                      <input
-                        type="text"
-                        placeholder={"e.g. Adnan & Mariam's Wedding Registry"}
-                        value={registryName}
-                        onChange={(e) => setRegistryName(e.target.value)}
-                        className={styles.formInput}
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <span className={styles.formLabel}>Link an Event</span>
-                      <div className={styles.selectWrap}>
-                        <select
-                          className={styles.formSelect}
-                          value={selectedEventId}
-                          onChange={(e) => handleEventChange(e.target.value)}
-                        >
-                          <option value="">-- Select Event --</option>
-                          {events.map((e) => (
-                            <option key={e.id} value={e.id}>
-                              {e.title}
-                            </option>
-                          ))}
-                        </select>
-                        <i className="bx bx-chevron-down"></i>
-                      </div>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <span className={styles.formLabel}>Event Date</span>
-                      <div className={styles.dateField}>
-                        <i className="bx bx-calendar-alt"></i>
-                        <span>{eventDate}</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <span className={styles.formLabel}>Cover Photo (Optional)</span>
-                      <div className={styles.photoUpload}>
-                        <i className="bx bx-image-add"></i>
-                        <span>Click to upload a cover photo</span>
-                        <small>JPG or PNG · up to 5 MB</small>
-                      </div>
-                    </div>
-                  </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Registry Name</label>
+                  <input
+                    className={styles.formInput}
+                    type="text"
+                    value={registryName}
+                    onChange={(e) => setRegistryName(e.target.value)}
+                    placeholder="e.g. Adnan & Mariam's Wedding Registry"
+                  />
                 </div>
 
-                {/* Card 2: Guests Add Block */}
-                <div className={styles.card}>
-                  <div className={styles.cardPad}>
-                    <div className={styles.cardTitle}>
-                      <span className={styles.ctIc}>
-                        <i className="bx bx-group"></i>
-                      </span>
-                      Guests
-                      <span className={styles.tabCount} style={{ marginLeft: '10px' }}>
-                        {addedGuests.length}
-                      </span>
-                    </div>
-                    <p className={styles.cardSub}>
-                      Guests are the people you invite to this registry. Only invited guests can view it.
-                    </p>
-
-                    {addedGuests.length > 0 ? (
-                      <div className={styles.guestChips}>
-                        {addedGuests.map((g) => (
-                          <div key={g.id} className={styles.gchip}>
-                            <span className={styles.gchipAv}>{g.name.charAt(0).toUpperCase()}</span>
-                            <span>{g.name}</span>
-                            <button onClick={() => handleRemoveGuest(g.id)} className={styles.gchipX}>
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className={styles.guestEmpty}>
-                        <i className="bx bx-user-plus"></i>
-                        No guests added yet. Select from contacts or add manual co-hosts.
-                      </div>
-                    )}
-
-                    <div className={styles.subhead}>From your contacts</div>
-                    <div className={styles.contactSearch}>
-                      <i className="bx bx-search"></i>
-                      <input
-                        type="text"
-                        placeholder="Search contacts by name..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-
-                    <div className={styles.contactList}>
-                      {filteredContacts.map((c) => {
-                        const added = addedGuests.some(g => g.id === c.id);
-                        return (
-                          <div key={c.id} className={styles.crow}>
-                            <div className={styles.crowAv}>{c.name.charAt(0).toUpperCase()}</div>
-                            <div className={styles.crowInfo}>
-                              <div className={styles.crowName}>{c.name}</div>
-                              <div className={styles.crowPhone}>+92 {c.phone}</div>
-                            </div>
-                            {added ? (
-                              <button className={`${styles.crowBtn} ${styles.crowBtnAdded}`} disabled>
-                                Added
-                              </button>
-                            ) : (
-                              <button onClick={() => handleAddGuest(c)} className={styles.crowBtn}>
-                                <i className="bx bx-plus"></i> Add
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      onClick={() => setShowAddManual(!showAddManual)}
-                      className={styles.addnewToggle}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Link an Event</label>
+                  <div className={styles.selectWrap}>
+                    <select
+                      className={styles.formSelect}
+                      value={selectedEventId}
+                      onChange={(e) => {
+                        setSelectedEventId(e.target.value);
+                        setCustomDate('');
+                      }}
                     >
-                      <i className="bx bx-user-plus"></i> Not in your contacts? Add someone new
-                    </button>
+                      {userEvents.map(e => (
+                        <option key={e.id} value={e.id}>
+                          {e.name} — {e.date}
+                        </option>
+                      ))}
+                    </select>
+                    <i className="bx bx-chevron-down"></i>
+                  </div>
 
-                    {showAddManual && (
-                      <div className={styles.addnewForm}>
-                        <div className={styles.addnewRow}>
-                          <input
-                            type="text"
-                            placeholder="Full name"
-                            value={newGuestName}
-                            onChange={(e) => setNewGuestName(e.target.value)}
-                            className={styles.formInput}
-                          />
-                          <div className={styles.phoneField}>
-                            <span className={styles.phoneCc}>+92</span>
-                            <input
-                              type="tel"
-                              placeholder="3XX XXXXXXX"
-                              value={newGuestPhone}
-                              onChange={(e) => setNewGuestPhone(e.target.value)}
-                              className={styles.phoneNum}
-                            />
-                          </div>
-                        </div>
-                        <div className={styles.addnewActions}>
-                          <button onClick={() => setShowAddManual(false)} className={`${styles.btnSm} ${styles.ghost}`}>
-                            Cancel
-                          </button>
-                          <button onClick={handleAddManualGuest} className={`${styles.btnSm} ${styles.primary}`}>
-                            <i className="bx bx-plus"></i> Add guest
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={styles.privacyNote}>
-                      <i className="bx bxs-lock-alt"></i>
-                      <div>
-                        <b>Private by default.</b> This registry is only visible to the guests you invite here. It never appears in public search.
-                      </div>
-                    </div>
+                  <div className={styles.quickPills}>
+                    {userEvents.map(e => (
+                      <span
+                        key={e.id}
+                        className={`${styles.qpill} ${selectedEventId === e.id ? styles.qpillOn : ''}`}
+                        onClick={() => {
+                          setSelectedEventId(e.id);
+                          setCustomDate('');
+                        }}
+                      >
+                        {e.short}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <div className={styles.formActions}>
-                  <Link href="/registry" className={styles.btnGhost}>
-                    Cancel
-                  </Link>
-                  <button onClick={handleSubmitRegistry} disabled={isSaving} className={styles.btnPrimary}>
-                    <i className="bx bx-check"></i> Create Registry
-                  </button>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Event Date</label>
+                  <div className={styles.dateField} onClick={openDatePicker} style={{ cursor: 'pointer', position: 'relative' }}>
+                    <i className="bx bx-calendar-alt"></i>
+                    <span style={{ fontWeight: 700, flex: 1 }}>{displayDate}</span>
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        opacity: 0,
+                        width: '100%',
+                        height: '100%',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDatePicker();
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                    >
+                      Change Date
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Cover Photo <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>&#40;optional&#41;</span>
+                  </label>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
+
+                  {coverPhoto ? (
+                    <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', height: '150px', border: '1px solid var(--border)' }}>
+                      <img
+                        src={coverPhoto}
+                        alt="Cover Preview"
+                        onClick={() => setIsPreviewModalOpen(true)}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                      />
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsPreviewModalOpen(true)}
+                          style={{
+                            background: 'rgba(0,0,0,0.65)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Preview full image"
+                        >
+                          <i className="bx bx-show" style={{ fontSize: '18px' }}></i>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCoverPhoto(null)}
+                          style={{
+                            background: 'rgba(0,0,0,0.65)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Remove photo"
+                        >
+                          <i className="bx bx-x" style={{ fontSize: '20px' }}></i>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.photoUpload} onClick={handleFileClick}>
+                      <i className="bx bx-image-add"></i>
+                      <span>Click to upload a cover photo</span>
+                      <small>JPG or PNG · up to 5 MB</small>
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* RIGHT RAIL: Guides Steps list */}
-              <aside className={styles.side}>
-                <div className={styles.stepsCard}>
-                  <div className={styles.stepsTitle}>
-                    <i className="bx bx-list-check"></i>How your registry works
+            {/* GUESTS CARD */}
+            <div className={styles.card}>
+              <div className={styles.cardPad}>
+                <div className={styles.cardTitle}>
+                  <span className={styles.ctIc}><i className="bx bx-group"></i></span>
+                  Guests
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '3px 10px', borderRadius: '999px', marginLeft: '2px' }}>
+                    {selectedGuests.length}
+                  </span>
+                </div>
+                <div className={styles.cardSub}>
+                  Guests are the people you invite to this registry — added from your Contacts. Only invited guests can view it.
+                </div>
+
+                {selectedGuests.length > 0 && (
+                  <div className={styles.guestChips}>
+                    {selectedGuests.map(g => (
+                      <span key={g} className={styles.gchip}>
+                        <span className={styles.gchipAv}>{initials(g)}</span>
+                        {g}
+                        <button className={styles.gchipX} onClick={() => handleRemoveGuest(g)}>
+                          <i className="bx bx-x"></i>
+                        </button>
+                      </span>
+                    ))}
                   </div>
-                  <p className={styles.stepsSub}>Three simple steps to a registry your guests can gift from.</p>
+                )}
 
-                  <div className={`${styles.step} ${styles.stepDone}`}>
-                    <div className={styles.stepNum}>1</div>
-                    <div>
-                      <h4 className={styles.stepTitle}>Create &amp; link an event</h4>
-                      <p className={styles.stepDesc}>
-                        Name your registry and connect it to one of your events so guests know the occasion.
-                      </p>
+                {selectedGuests.length === 0 && (
+                  <div className={styles.guestEmpty}>
+                    <i className="bx bx-user-plus"></i>No guests yet. Add them from your contacts below, or add someone new.
+                  </div>
+                )}
+
+                <div className={styles.subhead}>From your contacts</div>
+                <div className={styles.contactSearch}>
+                  <i className="bx bx-search"></i>
+                  <input
+                    type="text"
+                    placeholder="Search contacts by name..."
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.contactList}>
+                  {filteredContacts.map(c => {
+                    const isAdded = selectedGuests.includes(c.name);
+
+                    return (
+                      <div key={c.phone} className={styles.crow}>
+                        <div className={styles.crowAv}>{initials(c.name)}</div>
+                        <div className={styles.crowInfo}>
+                          <div className={styles.crowName}>{c.name}</div>
+                          <div className={styles.crowPhone}>{c.phone}</div>
+                        </div>
+                        {isAdded ? (
+                          <button className={`${styles.crowBtn} ${styles.crowBtnAdded}`}>
+                            <i className="bx bx-check"></i>Added
+                          </button>
+                        ) : (
+                          <button className={styles.crowBtn} onClick={() => handleAddGuest(c.name)}>
+                            <i className="bx bx-plus"></i>Add
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ADD SOMEONE NEW */}
+                {!showAddNew ? (
+                  <button className={styles.addnewToggle} onClick={() => setShowAddNew(true)}>
+                    <i className="bx bx-user-plus"></i>Not in your contacts? Add someone new
+                  </button>
+                ) : (
+                  <div className={styles.addnewForm}>
+                    <div className={styles.addnewRow}>
+                      <input
+                        className={styles.formInput}
+                        type="text"
+                        placeholder="Full name"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                      />
+                      <div className={styles.phoneField}>
+                        <span className={styles.phoneCc}>+92</span>
+                        <input
+                          className={styles.phoneNum}
+                          type="tel"
+                          maxLength={10}
+                          placeholder="3XX XXXXXXX"
+                          value={newPhone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setNewPhone(val);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className={styles.addnewActions}>
+                      <button className={`${styles.btnSm} ${styles.btnSmGhost}`} onClick={() => setShowAddNew(false)}>
+                        Cancel
+                      </button>
+                      <button className={`${styles.btnSm} ${styles.btnSmPrimary}`} onClick={handleAddNewContact}>
+                        <i className="bx bx-plus"></i>Add guest
+                      </button>
+                    </div>
+                    <div className={styles.addnewHint}>
+                      <i className="bx bx-info-circle"></i>
+                      They&apos;re saved to your contacts and invited by SMS. If they&apos;re not on Tayaree yet, the invite includes a link to join and view your registry.
                     </div>
                   </div>
+                )}
 
-                  <div className={`${styles.step} ${addedGuests.length > 0 ? styles.stepDone : styles.stepActive}`}>
-                    <div className={styles.stepNum}>2</div>
-                    <div>
-                      <h4 className={styles.stepTitle}>Add guests</h4>
-                      <p className={styles.stepDesc}>
-                        Invite people from your contacts. Only the guests you add can view this registry.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className={styles.step}>
-                    <div className={styles.stepNum}>3</div>
-                    <div>
-                      <h4 className={styles.stepTitle}>Add gifts to list</h4>
-                      <p className={styles.stepDesc}>
-                        Browse Tayaree packages and bookmark services you&apos;d like your guests to fund.
-                      </p>
-                    </div>
+                <div className={styles.privacyNote}>
+                  <i className="bx bxs-lock-alt"></i>
+                  <div>
+                    <b>Private by default.</b> This registry is only visible to the guests you invite here. It never appears in public search.
                   </div>
                 </div>
-              </aside>
+              </div>
+            </div>
+
+            {/* FORM ACTIONS */}
+            <div className={styles.formActions}>
+              <Link className={styles.btnGhost} href="/registry">
+                Cancel
+              </Link>
+              <button className={styles.btnPrimary} onClick={handleSubmit} disabled={isSubmitting}>
+                <i className="bx bx-check"></i>
+                <span>{isSubmitting ? 'Creating...' : 'Create Registry'}</span>
+              </button>
             </div>
           </div>
-        </div>
-      </main>
 
-      <Footer />
-    </>
+          {/* RIGHT SIDE RAIL: DYNAMIC STEP INDICATORS MATCHING DESIGNS 1:1 */}
+          <aside className={styles.side}>
+            <div className={styles.stepsCard}>
+              <div className={styles.stepsTitle}>
+                <i className="bx bx-list-check"></i>How your registry works
+              </div>
+              <div className={styles.stepsSub}>
+                Three simple steps to a registry your guests can gift from.
+              </div>
+
+              {/* STEP 1: GREEN CHECKMARK IF DONE, RED IF ACTIVE */}
+              <div className={`${styles.step} ${isStep1Done ? styles.stepDone : styles.stepActive}`}>
+                <div className={styles.stepNum}>
+                  {isStep1Done ? <i className="bx bx-check"></i> : '1'}
+                </div>
+                <div>
+                  <div className={styles.stepTitle}>Create &amp; link an event</div>
+                  <div className={styles.stepDesc}>Name your registry and connect it to one of your events so guests know the occasion and date.</div>
+                </div>
+              </div>
+
+              {/* STEP 2: GREEN CHECKMARK IF DONE, RED IF ACTIVE, GREY IF PENDING */}
+              <div className={`${styles.step} ${isStep2Done ? styles.stepDone : (isStep1Done ? styles.stepActive : '')}`}>
+                <div className={styles.stepNum}>
+                  {isStep2Done ? <i className="bx bx-check"></i> : '2'}
+                </div>
+                <div>
+                  <div className={styles.stepTitle}>Add guests</div>
+                  <div className={styles.stepDesc}>Invite people from your contacts. Only the guests you add can view this registry.</div>
+                </div>
+              </div>
+
+              {/* STEP 3: RED IF STEP 2 DONE, GREY IF PENDING */}
+              <div className={`${styles.step} ${isStep2Done ? styles.stepActive : ''}`}>
+                <div className={styles.stepNum}>3</div>
+                <div>
+                  <div className={styles.stepTitle}>Add items to the registry</div>
+                  <div className={styles.stepDesc}>Browse services and add the packages you'd love — your guests pick from these.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.notifyCard}>
+              <div className={styles.notifyHead}>
+                <i className="bx bx-bell"></i>You'll always know
+              </div>
+              <div className={styles.notifyBody}>
+                Your guests can view the registry and <b>buy these packages</b> for you. The moment someone purchases an item, <b>you get a notification</b> — and it's marked as bought so no one gifts the same thing twice.
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* FULL SCREEN LIGHTBOX PREVIEW MODAL */}
+      {isPreviewModalOpen && coverPhoto && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setIsPreviewModalOpen(false)}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
+            <img
+              src={coverPhoto}
+              alt="Cover Photo Full Preview"
+              style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+            />
+            <button
+              onClick={() => setIsPreviewModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '-16px',
+                right: '-16px',
+                background: 'var(--primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                cursor: 'pointer',
+                fontSize: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
+              }}
+            >
+              <i className="bx bx-x"></i>
+            </button>
+          </div>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }
