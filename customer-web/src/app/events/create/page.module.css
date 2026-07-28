@@ -1740,3 +1740,193 @@
   .menuLayout, .cgLayout { grid-template-columns: 1fr; }
   .cgActs { grid-template-columns: 1fr; }
 }
+
+/* HOW IT WORKS / INTRO STEP (STEP 0) */
+.howItWorksWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+.howHeader {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.howCalBadge {
+  width: 72px;
+  height: 72px;
+  background: #FFF0F0;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  border: 1px solid #FFE0E0;
+  box-shadow: 0 4px 14px rgba(215, 25, 33, 0.08);
+}
+.howCalMonth {
+  font-size: 11px;
+  font-weight: 800;
+  color: #D71921;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.howCalDay {
+  font-size: 22px;
+  font-weight: 900;
+  color: #222;
+  line-height: 1;
+}
+.howMainTitle {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.howMainSub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Timeline Steps */
+.howStepsList {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.howStepRow {
+  display: flex;
+  gap: 18px;
+  position: relative;
+  margin-bottom: 28px;
+}
+.howStepRow:last-child {
+  margin-bottom: 0;
+}
+.howStepNumCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.howStepNum {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #D71921;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
+  box-shadow: 0 4px 10px rgba(215, 25, 33, 0.25);
+}
+.howStepLine {
+  position: absolute;
+  top: 38px;
+  bottom: -28px;
+  width: 2px;
+  background: #FFE0E0;
+  left: 18px;
+  z-index: 1;
+}
+.howStepRow:last-child .howStepLine {
+  display: none;
+}
+.howStepContent {
+  padding-top: 4px;
+}
+.howStepTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.howStepDesc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* Info Cards Stack */
+.howInfoCards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.howInfoCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.howInfoIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFF0F0;
+  color: #D71921;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.howInfoTitle {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.howInfoText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* CTA Bar */
+.howCtaBar {
+  text-align: center;
+  margin-top: 28px;
+  margin-bottom: 36px;
+}
+.howStartBtn {
+  background: #D71921;
+  color: #fff;
+  border: none;
+  width: 100%;
+  max-width: 440px;
+  height: 52px;
+  border-radius: 26px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(215, 25, 33, 0.35);
+  transition: transform 0.15s, background-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.howStartBtn:hover {
+  background: #b51219;
+  transform: translateY(-2px);
+}
+

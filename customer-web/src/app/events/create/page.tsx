@@ -356,7 +356,7 @@ const SERVICE_PACKAGES_MAP: Record<string, SvcPackage[]> = {
 
 export default function CreateEventPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [eventTypes, setEventTypes] = useState<EventType[]>(DEFAULT_TYPES);
 
   // STEP 1 STATE
@@ -627,6 +627,108 @@ export default function CreateEventPage() {
   const servicesSubtotal = selectedSvcPkgObjs.reduce((acc, p) => acc + p.price, 0);
 
   const selectedStoreNames = Array.from(new Set(selectedSvcPkgObjs.map(p => p.categoryName))).join(', ') || 'None';
+
+  // STEP 0 — HOW IT WORKS INTRO SCREEN MATCHING MOBILE FLOW & DESIGNS
+  if (step === 0) {
+    return (
+      <DashboardLayout breadcrumbTitle="How it works">
+        <div className={styles.howItWorksWrapper}>
+          {/* HEADER BADGE & TITLES */}
+          <div className={styles.howHeader}>
+            <div className={styles.howCalBadge}>
+              <span className={styles.howCalMonth}>July</span>
+              <span className={styles.howCalDay}>17</span>
+            </div>
+            <h1 className={styles.howMainTitle}>Plan your event in 3 steps</h1>
+            <p className={styles.howMainSub}>
+              Get matched with vendors who fit your style, date, and budget.
+            </p>
+          </div>
+
+          {/* 3 TIMELINE STEPS */}
+          <div className={styles.howStepsList}>
+            <div className={styles.howStepRow}>
+              <div className={styles.howStepNumCol}>
+                <div className={styles.howStepNum}>1</div>
+                <div className={styles.howStepLine}></div>
+              </div>
+              <div className={styles.howStepContent}>
+                <div className={styles.howStepTitle}>Create your event</div>
+                <div className={styles.howStepDesc}>
+                  Tell us the basics — name, type, date, guest count, and budget. Takes about a minute.
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.howStepRow}>
+              <div className={styles.howStepNumCol}>
+                <div className={styles.howStepNum}>2</div>
+                <div className={styles.howStepLine}></div>
+              </div>
+              <div className={styles.howStepContent}>
+                <div className={styles.howStepTitle}>Share your catering preference</div>
+                <div className={styles.howStepDesc}>
+                  Pick a curated package or browse individual dishes by cuisine. Add as many as you want — we'll send it all out for quotes.
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.howStepRow}>
+              <div className={styles.howStepNumCol}>
+                <div className={styles.howStepNum}>3</div>
+              </div>
+              <div className={styles.howStepContent}>
+                <div className={styles.howStepTitle}>Request additional services</div>
+                <div className={styles.howStepDesc}>
+                  Need a venue, decor, outfits, or entertainment? Add any combination — vendors bid on whatever you select.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 INFO CARDS */}
+          <div className={styles.howInfoCards}>
+            <div className={styles.howInfoCard}>
+              <div className={styles.howInfoIcon}><i className="bx bx-info-circle"></i></div>
+              <div>
+                <div className={styles.howInfoTitle}>Just for estimation</div>
+                <div className={styles.howInfoText}>
+                  Prices shown across the wizard are market-rate estimates to help you plan — they're not charges. You won't pay anything until you accept a bid and add the items to your cart.
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.howInfoCard}>
+              <div className={styles.howInfoIcon}><i className="bx bx-bookmark-alt"></i></div>
+              <div>
+                <div className={styles.howInfoTitle}>Why we create Events</div>
+                <div className={styles.howInfoText}>
+                  Your Event keeps everything in one place — quotes, vendors, payments, and your guest list. You can edit it any time, share it with family to invite guests, and reuse it for future occasions.
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.howInfoCard}>
+              <div className={styles.howInfoIcon}><i className="bx bx-time-five"></i></div>
+              <div>
+                <div className={styles.howInfoTitle}>How the quote process works</div>
+                <div className={styles.howInfoText}>
+                  Once you submit, matching vendors get notified and send personalised bids within 24–48 hours. Compare, chat, and negotiate before accepting — no commitment until you say yes.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* GET STARTED CTA */}
+          <div className={styles.howCtaBar}>
+            <button className={styles.howStartBtn} onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+              Get Started <i className="bx bx-right-arrow-alt" style={{ fontSize: '20px' }}></i>
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // RENDER QUOTE REQUEST SENT CONFIRMATION SCREEN
   if (isSubmitted) {
