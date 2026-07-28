@@ -50,7 +50,7 @@ function formatDateDisplay(dStr?: string): string {
 }
 
 export default function QuotesPage() {
-  const [filter, setFilter] = useState<'all' | 'new' | 'negotiating' | 'awaiting'>('all');
+  const [filter, setFilter] = useState<'all' | 'new' | 'negotiating' | 'awaiting' | 'accepted'>('all');
   const [events, setEvents] = useState<EventQuotesGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -82,6 +82,11 @@ export default function QuotesPage() {
         });
       }
 
+      let acceptedKeys: string[] = [];
+      try {
+        acceptedKeys = JSON.parse(localStorage.getItem('accepted_quotes') || '[]');
+      } catch (e) {}
+
       if (rawEvents.length > 0) {
         const mappedGroups: EventQuotesGroup[] = rawEvents.map((evt: any) => {
           const title = evt.event_name || evt.name || "Ahmed's Wedding";
@@ -101,7 +106,7 @@ export default function QuotesPage() {
               quotes: 3,
               best: Math.round(cateringEst * 0.88),
               market: cateringEst,
-              status: 'new'
+              status: acceptedKeys.includes('catering') ? 'accepted' : 'new'
             });
           }
 
@@ -113,7 +118,7 @@ export default function QuotesPage() {
               quotes: 2,
               best: 185000,
               market: 220000,
-              status: 'new'
+              status: acceptedKeys.includes('venue') ? 'accepted' : 'new'
             });
           }
 
@@ -125,7 +130,7 @@ export default function QuotesPage() {
               quotes: 1,
               best: 98000,
               market: 120000,
-              status: 'negotiating'
+              status: acceptedKeys.includes('decor') ? 'accepted' : 'negotiating'
             });
           }
 
@@ -137,7 +142,7 @@ export default function QuotesPage() {
               quotes: 0,
               best: null,
               market: 90000,
-              status: 'awaiting'
+              status: acceptedKeys.includes('photo') ? 'accepted' : 'awaiting'
             });
           }
 
@@ -149,9 +154,15 @@ export default function QuotesPage() {
               quotes: 3,
               best: 210000,
               market: 240000,
-              status: 'new'
+              status: acceptedKeys.includes('catering') ? 'accepted' : 'new'
             });
           }
+
+          servicesList.forEach(s => {
+            if (acceptedKeys.includes(s.key)) {
+              s.status = 'accepted';
+            }
+          });
 
           return {
             id: String(evt.id || `evt-${Date.now()}`),
@@ -214,6 +225,12 @@ export default function QuotesPage() {
             onClick={() => setFilter('awaiting')}
           >
             Awaiting bids
+          </button>
+          <button
+            className={`${styles.fchip} ${filter === 'accepted' ? styles.fchipActive : ''}`}
+            onClick={() => setFilter('accepted')}
+          >
+            Accepted
           </button>
         </div>
 

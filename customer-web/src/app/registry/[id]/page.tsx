@@ -22,14 +22,13 @@ interface RegistryItem {
 }
 
 const CATALOG_PACKAGES: Omit<RegistryItem, 'id' | 'status'>[] = [
+  { name: "Silverspoon Gold Package", vendor: "Silver Spoon Catering", price: 2000, was: 2500, qty: 1, img: "https://images.unsplash.com/photo-1555244162-803834f70033?w=400&h=240&fit=crop", category: "catering", slug: "silverspoon-gold-package" },
   { name: "Wedding Photography", vendor: "Pixel Perfect Studios", price: 85000, was: 95000, qty: 1, img: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=240&fit=crop", category: "photography", slug: "premium-photography-video" },
   { name: "Mehndi Decor Package", vendor: "Rang Barangi Events", price: 45000, was: 52000, qty: 1, img: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=400&h=240&fit=crop", category: "mehndi", slug: "bridal-mehndi-artist-package" },
-  { name: "Walima Catering (200 pax)", vendor: "Savour Karachi", price: 120000, was: 135000, qty: 1, img: "https://images.unsplash.com/photo-1555244162-803834f70033?w=400&h=240&fit=crop", category: "catering", slug: "royal-biryani-catering" },
   { name: "Floral Arrangements", vendor: "Bloom & Bliss LHR", price: 28000, was: 0, qty: 2, img: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=240&fit=crop", category: "decor", slug: "floral-stage-hall-decor" },
   { name: "Live Music Band", vendor: "Lahore Beats Co.", price: 60000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1571266028234-7dc0e9ea5e24?w=400&h=240&fit=crop", category: "music", slug: "live-sound-dj-lighting" },
   { name: "Bridal Makeup & Hair", vendor: "Glam by Sana K.", price: 35000, was: 40000, qty: 1, img: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=240&fit=crop", category: "beauty", slug: "bridal-hd-makeup-hair-styling" },
-  { name: "Nikah Venue Booking", vendor: "Pearl Continental LHR", price: 250000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&h=240&fit=crop", category: "venues", slug: "grand-palace-hall-booking" },
-  { name: "Cinematic Videography", vendor: "Vista Lens Studios", price: 70000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=240&fit=crop", category: "photography", slug: "premium-photography-video" }
+  { name: "Grand Palace Hall Booking", vendor: "Grand Palace Banquet", price: 400000, was: 0, qty: 1, img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&h=240&fit=crop", category: "venue", slug: "grand-palace-hall-booking" }
 ];
 
 function fmt(n: number): string {
@@ -47,7 +46,7 @@ export default function RegistryDetailPage() {
 
   const [registry, setRegistry] = useState<any | null>(null);
   const [items, setItems] = useState<RegistryItem[]>([]);
-  const [guests, setGuests] = useState<string[]>(["Fatima Ahmed", "Ali Raza", "Hassan Malik", "Amna Bashir"]);
+  const [guests, setGuests] = useState<string[]>([]);
   
   const [filter, setFilter] = useState<'all' | 'available' | 'reserved' | 'bought'>('all');
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -74,20 +73,40 @@ export default function RegistryDetailPage() {
         date: 'Saturday, 15 March 2025',
         occasion: 'Nikah Ceremony',
         status: 'active',
-        guests: 4
+        guests: 4,
+        invitedGuests: ["Fatima Ahmed", "Ali Raza", "Hassan Malik", "Amna Bashir"]
       };
     }
 
     setRegistry(currentReg);
 
-    // 3. Load items specific to registry or default seed items
+    // 3. Load dynamic guests list
+    if (currentReg.invitedGuests && Array.isArray(currentReg.invitedGuests) && currentReg.invitedGuests.length > 0) {
+      setGuests(currentReg.invitedGuests);
+    } else if (currentReg.guests && typeof currentReg.guests === 'number' && currentReg.guests > 0) {
+      setGuests(Array.from({ length: currentReg.guests }, (_, i) => `Guest ${i + 1}`));
+    } else {
+      setGuests(["Fatima Ahmed"]);
+    }
+
+    // 4. Load items specific to registry
     const itemsKey = `reg_items_${regId}`;
     try {
       const rawStored = localStorage.getItem(itemsKey);
       if (rawStored !== null) {
-        setItems(JSON.parse(rawStored));
-      } else {
-        // Seed default items only on initial setup if key never existed
+        const parsed = JSON.parse(rawStored);
+        // Clean leftover old seed items if user registry was saved as empty
+        if (currentReg && currentReg.id && currentReg.id.startsWith('reg-') && currentReg.id !== 'reg-1' && Array.isArray(currentReg.itemsList) && currentReg.itemsList.length === 0 && parsed.length === 4 && parsed[0]?.name === "Wedding Photography" && parsed[2]?.name === "Walima Catering (200 pax)") {
+          setItems([]);
+          localStorage.setItem(itemsKey, JSON.stringify([]));
+        } else {
+          setItems(parsed);
+        }
+      } else if (currentReg.itemsList && Array.isArray(currentReg.itemsList)) {
+        setItems(currentReg.itemsList);
+        localStorage.setItem(itemsKey, JSON.stringify(currentReg.itemsList));
+      } else if (currentReg.id === 'zara-ahmed' || currentReg.id === 'reg-1') {
+        // Seed default demo items ONLY for fallback demo registry zara-ahmed
         const seeded: RegistryItem[] = CATALOG_PACKAGES.slice(0, 4).map((p, idx) => ({
           ...p,
           id: `item-${idx + 1}`,
@@ -96,6 +115,10 @@ export default function RegistryDetailPage() {
         }));
         setItems(seeded);
         localStorage.setItem(itemsKey, JSON.stringify(seeded));
+      } else {
+        // User created registries start empty!
+        setItems([]);
+        localStorage.setItem(itemsKey, JSON.stringify([]));
       }
     } catch (e) {
       setItems([]);
@@ -210,9 +233,9 @@ export default function RegistryDetailPage() {
             <button className={styles.btnPrimary} onClick={() => setShowInviteModal(true)}>
               <i className="bx bx-user-plus"></i>Invite Guests
             </button>
-            <Link className={styles.btnGhost} href="/services/all">
+            <button className={styles.btnGhost} onClick={() => setShowAddItemModal(true)}>
               <i className="bx bx-plus"></i>Add Items
-            </Link>
+            </button>
             <Link className={styles.btnGhost} href={`/registry/create?edit=${registry.id}`}>
               <i className="bx bx-edit"></i>Edit Registry
             </Link>
@@ -304,9 +327,9 @@ export default function RegistryDetailPage() {
                 Bought
               </button>
             </div>
-            <Link className={styles.btnPrimary} href="/services/all" style={{ padding: '9px 16px' }}>
+            <button className={styles.btnPrimary} onClick={() => setShowAddItemModal(true)} style={{ padding: '9px 16px' }}>
               <i className="bx bx-plus"></i>Add Items
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -315,11 +338,11 @@ export default function RegistryDetailPage() {
           {filteredItems.length === 0 ? (
             <div className={styles.emptyItems}>
               <i className="bx bx-package"></i>
-              <h3>No items in this filter</h3>
-              <p>Click "+ Add Items" above to browse service packages and add gifts to your registry.</p>
-              <Link className={styles.btnPrimary} href="/services/all" style={{ marginTop: '16px' }}>
+              <h3>No items added to this registry yet</h3>
+              <p>Click "+ Add Items" below to browse service packages and add gifts to your registry.</p>
+              <button className={styles.btnPrimary} onClick={() => setShowAddItemModal(true)} style={{ marginTop: '16px' }}>
                 <i className="bx bx-plus"></i>Browse &amp; Add Items
-              </Link>
+              </button>
             </div>
           ) : (
             filteredItems.map(item => (

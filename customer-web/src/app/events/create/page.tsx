@@ -42,7 +42,13 @@ function getEventTypeIcon(name: string, fallback?: string): string {
 function fmt(n: number | string): string {
   const num = typeof n === 'number' ? n : parseFloat(String(n).replace(/,/g, ''));
   if (isNaN(num)) return '0';
-  return num.toLocaleString('en-IN');
+  return num.toLocaleString('en-US');
+}
+
+function formatNumberWithCommas(val: string): string {
+  const clean = String(val || '').replace(/\D/g, '');
+  if (!clean) return '';
+  return parseInt(clean, 10).toLocaleString('en-US');
 }
 
 function formatDateDisplay(dStr: string): string {
@@ -378,6 +384,91 @@ export default function CreateEventPage() {
   const [perHeadAmount, setPerHeadAmount] = useState('1,500');
   const [fixedTotalAmount, setFixedTotalAmount] = useState('');
 
+  // TIMING INSTRUCTIONS & VOICE NOTE STATE
+  const [timingInstructions, setTimingInstructions] = useState('');
+  const [isTextSaved, setIsTextSaved] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
+  const [isPlayingVoiceNote, setIsPlayingVoiceNote] = useState(false);
+
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const audioChunksRef = React.useRef<Blob[]>([]);
+  const recordingTimerRef = React.useRef<any>(null);
+  const voiceAudioElementRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          setVoiceNoteUrl(reader.result as string);
+        };
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      showToast('Microphone permission denied or unsupported on this browser.', 'error');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    }
+  };
+
+  const deleteVoiceNote = () => {
+    setVoiceNoteUrl(null);
+    setIsPlayingVoiceNote(false);
+    if (voiceAudioElementRef.current) {
+      voiceAudioElementRef.current.pause();
+      voiceAudioElementRef.current = null;
+    }
+  };
+
+  const togglePlayVoiceNote = () => {
+    if (!voiceNoteUrl) return;
+    if (!voiceAudioElementRef.current) {
+      const audio = new Audio(voiceNoteUrl);
+      audio.onended = () => setIsPlayingVoiceNote(false);
+      voiceAudioElementRef.current = audio;
+    }
+    if (isPlayingVoiceNote) {
+      voiceAudioElementRef.current.pause();
+      setIsPlayingVoiceNote(false);
+    } else {
+      voiceAudioElementRef.current.play();
+      setIsPlayingVoiceNote(true);
+    }
+  };
+
   // STEP 2 STATE
   const [menuTab, setMenuTab] = useState<'pkg' | 'items'>('pkg');
   const [menuSearch, setMenuSearch] = useState('');
@@ -569,6 +660,8 @@ export default function CreateEventPage() {
       budget_amount: cleanBudget > 0 ? cleanBudget : null,
       notes: notes.trim() || null,
       contact_phone: contactPhone.trim() || null,
+      timing_instructions: timingInstructions.trim() || null,
+      timing_voice_note: voiceNoteUrl || null,
       services: selectedSvcPkgIds,
       packages: selectedPkgIds
     };
@@ -1069,6 +1162,87 @@ export default function CreateEventPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* TIMING INSTRUCTIONS & VOICE NOTE CARD */}
+                <div className={styles.timingBoxCard}>
+                  <div className={styles.timingBoxHead}>
+                    <i className="bx bx-notepad" style={{ color: '#D71921', fontSize: '18px' }}></i>
+                    <span>Timing instructions</span>
+                  </div>
+                  
+                  <div className={styles.timingTextareaWrapper}>
+                    <textarea
+                      className={styles.timingTextarea}
+                      placeholder="e.g. Nikkah at 4 PM, reception starts 8 PM..."
+                      value={timingInstructions}
+                      onChange={(e) => {
+                        setTimingInstructions(e.target.value);
+                        if (isTextSaved) setIsTextSaved(false);
+                      }}
+                      rows={3}
+                    />
+
+                    {/* ACTION BUTTONS (SEND / SAVE + MIC) */}
+                    <div className={styles.timingBoxActions}>
+                      {timingInstructions.trim().length > 0 && (
+                        <button
+                          type="button"
+                          className={`${styles.timingSendBtn} ${isTextSaved ? styles.timingSendBtnSaved : ''}`}
+                          onClick={() => {
+                            setIsTextSaved(true);
+                            showToast('Timing instruction saved ✓', 'success');
+                            setTimeout(() => setIsTextSaved(false), 2500);
+                          }}
+                          title={isTextSaved ? "Instruction Saved" : "Save instruction"}
+                        >
+                          {isTextSaved ? <i className="bx bx-check"></i> : <i className="bx bx-send"></i>}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className={`${styles.timingMicBtn} ${isRecording ? styles.timingMicBtnRecording : ''}`}
+                        onClick={isRecording ? stopRecording : startRecording}
+                        title={isRecording ? "Stop recording" : "Record voice note"}
+                      >
+                        {isRecording ? <i className="bx bx-stop"></i> : <i className="bx bxs-microphone"></i>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* LIVE RECORDING STRIP */}
+                  {isRecording && (
+                    <div className={styles.recordingLiveStrip}>
+                      <span className={styles.recordingDot}></span>
+                      <span>Recording voice note... {formatSeconds(recordingTime)}</span>
+                      <button type="button" className={styles.recordingStopLink} onClick={stopRecording}>
+                        Stop &amp; Save
+                      </button>
+                    </div>
+                  )}
+
+                  {/* RECORDED VOICE NOTE AUDIO PLAYER */}
+                  {voiceNoteUrl && !isRecording && (
+                    <div className={styles.voicePlayerCard}>
+                      <button type="button" className={styles.voicePlayBtn} onClick={togglePlayVoiceNote}>
+                        {isPlayingVoiceNote ? <i className="bx bx-pause"></i> : <i className="bx bx-play"></i>}
+                      </button>
+                      <div className={styles.voiceWaveTrack}>
+                        <div className={styles.voiceWaveBars}>
+                          <span className={styles.bar}></span><span className={styles.bar}></span>
+                          <span className={styles.bar}></span><span className={styles.bar}></span>
+                          <span className={styles.bar}></span><span className={styles.bar}></span>
+                        </div>
+                        <span className={styles.voiceNoteLabel}>
+                          {isPlayingVoiceNote ? 'Playing voice note...' : 'Voice note recorded'} ({formatSeconds(recordingTime || 5)})
+                        </span>
+                      </div>
+                      <button type="button" className={styles.voiceDeleteBtn} onClick={deleteVoiceNote} title="Delete voice note">
+                        <i className="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -1085,7 +1259,7 @@ export default function CreateEventPage() {
                   </div>
                 </div>
                 <div className={styles.chipsRow}>
-                  {[50, 100, 200, 300, 500].map(cnt => (
+                  {[50, 100, 150, 200, 300, 500, 750, 1000].map(cnt => (
                     <div
                       key={cnt}
                       className={`${styles.pchip} ${guests === cnt ? styles.pchipSelected : ''}`}
@@ -1106,7 +1280,11 @@ export default function CreateEventPage() {
                     </div>
                     <div className={styles.budgetIn}>
                       <span>PKR</span>
-                      <input value={perHeadAmount} onChange={(e) => setPerHeadAmount(e.target.value)} />
+                      <input
+                        value={perHeadAmount}
+                        onChange={(e) => setPerHeadAmount(formatNumberWithCommas(e.target.value))}
+                        placeholder="e.g. 1,500"
+                      />
                     </div>
                     <div className={styles.budgetHint}>Great for venue + premium catering. We search within 10–20% of this range.</div>
                   </div>
@@ -1121,7 +1299,7 @@ export default function CreateEventPage() {
                       <input
                         placeholder="e.g. 400,000"
                         value={fixedTotalAmount}
-                        onChange={(e) => setFixedTotalAmount(e.target.value)}
+                        onChange={(e) => setFixedTotalAmount(formatNumberWithCommas(e.target.value))}
                         disabled={budgetMode !== 'fixed'}
                       />
                     </div>

@@ -1883,3 +1883,158 @@
 .glbThumb { width:56px; height:56px; border-radius:6px; object-fit:cover; cursor:pointer; opacity:0.4; transition:.15s; border:2px solid transparent; flex-shrink:0; pointer-events:all; }
 .glbThumb:hover { opacity:0.75; }
 .glbThumbActive { opacity:1; border-color:var(--primary); }
+
+/* DEALS ROW (Image 3) */
+.dealsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.dealCard {
+  background: var(--card, #ffffff);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+.dealCardActive {
+  border-color: var(--primary, #e11d48);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.08);
+}
+.dealIconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.dealBody {
+  flex: 1;
+  min-width: 0;
+}
+.dealTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin-bottom: 3px;
+}
+.dealSub {
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.dealTag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* POLICY CARD & MINIMUM REQUIREMENTS TABLE (Image 4) */
+.policyCard {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.policyHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.policyHead i {
+  color: var(--primary);
+  font-size: 20px;
+}
+.reqTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.reqTable tr {
+  border-bottom: 1px solid var(--border);
+}
+.reqTable tr:last-child {
+  border-bottom: none;
+}
+.reqLabel {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface, #f9fafb);
+  width: 38%;
+  border-right: 1px solid var(--border);
+}
+.reqVal {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* PAYMENT SCHEDULE BREAKDOWN (Image 5) */
+.paymentScheduleBox {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.psHeading {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.psItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.psDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.psInfo {
+  flex: 1;
+  min-width: 0;
+}
+.psTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.psSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.psAmount {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .dealsRow {
+    grid-template-columns: 1fr;
+  }
+}

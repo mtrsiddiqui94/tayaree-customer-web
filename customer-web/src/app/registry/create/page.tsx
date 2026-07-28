@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api';
@@ -39,6 +39,16 @@ const DEFAULT_CONTACTS: Contact[] = [
   { name: "Danish Ali", phone: "+92 309 0123456" }
 ];
 
+const CATALOG_PACKAGES = [
+  { id: "pkg-1", name: "Silverspoon Gold Package", vendor: "Silver Spoon Catering", price: 2000, was: 2500, img: "https://images.unsplash.com/photo-1555244162-803834f70033?w=400&h=240&fit=crop", category: "catering", slug: "silverspoon-gold-package" },
+  { id: "pkg-2", name: "Wedding Photography", vendor: "Pixel Perfect Studios", price: 85000, was: 95000, img: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=240&fit=crop", category: "photography", slug: "premium-photography-video" },
+  { id: "pkg-3", name: "Mehndi Decor Package", vendor: "Rang Barangi Events", price: 45000, was: 52000, img: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=400&h=240&fit=crop", category: "mehndi", slug: "bridal-mehndi-artist-package" },
+  { id: "pkg-4", name: "Floral Arrangements", vendor: "Bloom & Bliss LHR", price: 28000, was: 0, img: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=240&fit=crop", category: "decor", slug: "floral-stage-hall-decor" },
+  { id: "pkg-5", name: "Live Music Band", vendor: "Lahore Beats Co.", price: 60000, was: 0, img: "https://images.unsplash.com/photo-1571266028234-7dc0e9ea5e24?w=400&h=240&fit=crop", category: "music", slug: "live-sound-dj-lighting" },
+  { id: "pkg-6", name: "Bridal Makeup & Hair", vendor: "Glam by Sana K.", price: 35000, was: 40000, img: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=240&fit=crop", category: "beauty", slug: "bridal-hd-makeup-hair-styling" },
+  { id: "pkg-7", name: "Grand Palace Hall Booking", vendor: "Grand Palace Banquet", price: 400000, was: 0, img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&h=240&fit=crop", category: "venue", slug: "grand-palace-hall-booking" }
+];
+
 function initials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
@@ -63,46 +73,42 @@ function formatDatePretty(dStr: string): string {
   return dStr;
 }
 
-export default function CreateRegistryPage() {
+function CreateRegistryFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit') || searchParams.get('id');
+
   const fileInputRef = useRef<any>(null);
   const dateInputRef = useRef<any>(null);
 
   const [userEvents, setUserEvents] = useState<UserEvent[]>(DEFAULT_EVENTS);
   const [selectedEventId, setSelectedEventId] = useState<string>(DEFAULT_EVENTS[0].id);
 
-  // Registry Name starts EMPTY with placeholder
   const [registryName, setRegistryName] = useState('');
-  
-  // Custom Date selection state
   const [customDate, setCustomDate] = useState<string>('');
-  
-  // Cover Image upload & preview modal state
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-
-  // Selected Guests state
   const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [showAddNew, setShowAddNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
-
+  const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadEvents() {
       try {
-        const stored = JSON.parse(localStorage.getItem('local_events') || '[]');
-        if (Array.isArray(stored) && stored.length > 0) {
-          const mapped: UserEvent[] = stored.map((e: any) => ({
+        const storedEvts = JSON.parse(localStorage.getItem('local_events') || '[]');
+        if (Array.isArray(storedEvts) && storedEvts.length > 0) {
+          const mapped: UserEvent[] = storedEvts.map((e: any) => ({
             id: String(e.id),
             name: e.event_name || 'Event',
             date: formatDatePretty(e.event_date),
             short: `${(e.event_name || 'Event').slice(0, 12)} · ${formatDatePretty(e.event_date).split(', ')[1] || 'Date'}`
           }));
           setUserEvents([...mapped, ...DEFAULT_EVENTS]);
-          setSelectedEventId(mapped[0].id);
+          if (!editId) setSelectedEventId(mapped[0].id);
         }
       } catch (e) {}
 
@@ -117,20 +123,58 @@ export default function CreateRegistryPage() {
             short: `${(e.event_name || 'Event').slice(0, 12)} · ${formatDatePretty(e.event_date).split(', ')[1] || 'Date'}`
           }));
           setUserEvents(mapped);
-          setSelectedEventId(mapped[0].id);
+          if (!editId) setSelectedEventId(mapped[0].id);
         }
       }
     }
 
     loadEvents();
-  }, []);
+  }, [editId]);
+
+  useEffect(() => {
+    if (!editId) return;
+    try {
+      const localRegistries = JSON.parse(localStorage.getItem('local_registries') || '[]');
+      let target = localRegistries.find((r: any) => String(r.id) === String(editId));
+
+      if (!target && (editId === 'zara-ahmed' || editId === 'reg-1')) {
+        target = {
+          id: editId,
+          name: "Zara & Ahmed's Wedding",
+          date: "15 Mar 2025",
+          occasion: "Nikah Ceremony",
+          invitedGuests: ['Fatima Ahmed', 'Ali Raza', 'Hassan Malik', 'Amna Bashir']
+        };
+      }
+
+      if (target) {
+        if (target.name) setRegistryName(target.name);
+        if (target.img) setCoverPhoto(target.img);
+        if (Array.isArray(target.invitedGuests)) setSelectedGuests(target.invitedGuests);
+
+        if (target.occasion) {
+          const foundEvt = userEvents.find(e => e.name === target.occasion || e.date === target.date);
+          if (foundEvt) setSelectedEventId(foundEvt.id);
+        }
+
+        const rawItems = localStorage.getItem(`reg_items_${editId}`);
+        if (rawItems) {
+          const parsed = JSON.parse(rawItems);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const matchedIds = CATALOG_PACKAGES.filter(cat =>
+              parsed.some((i: any) => i.name === cat.name || i.slug === cat.slug)
+            ).map(cat => cat.id);
+            setSelectedCatalogItemIds(matchedIds);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error prefilling registry edit data:', e);
+    }
+  }, [editId, userEvents]);
 
   const activeEvent = userEvents.find(e => e.id === selectedEventId) || userEvents[0] || DEFAULT_EVENTS[0];
   const displayDate = customDate ? formatDatePretty(customDate) : activeEvent.date;
-
-  // DYNAMIC STEP COMPONENT CALCULATIONS
-  const isStep1Done = registryName.trim().length > 0 || selectedEventId !== '';
-  const isStep2Done = selectedGuests.length > 0;
 
   const openDatePicker = () => {
     const el = dateInputRef.current;
@@ -181,17 +225,39 @@ export default function CreateRegistryPage() {
     setShowAddNew(false);
   };
 
+  const isStep1Done = registryName.trim().length > 0 || selectedEventId !== '';
+  const isStep2Done = selectedGuests.length > 0;
+
+  const filteredContacts = DEFAULT_CONTACTS.filter(c =>
+    c.name.toLowerCase().includes(contactSearch.toLowerCase())
+  );
+
   const handleSubmit = async () => {
     const finalName = registryName.trim() || `${activeEvent.name} Registry`;
-
     setIsSubmitting(true);
 
     const safeImg = (coverPhoto && coverPhoto.length > 50000)
       ? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop'
       : (coverPhoto || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=200&fit=crop');
 
+    const chosenItems = CATALOG_PACKAGES.filter(p => selectedCatalogItemIds.includes(p.id)).map((p, idx) => ({
+      id: `item-${Date.now()}-${idx}`,
+      name: p.name,
+      vendor: p.vendor,
+      price: p.price,
+      was: p.was,
+      qty: 1,
+      img: p.img,
+      status: 'available',
+      category: p.category,
+      slug: p.slug
+    }));
+
+    const targetRegId = editId || `reg-${Date.now()}`;
+    const totalVal = chosenItems.reduce((acc, i) => acc + i.price, 0);
+
     const newReg = {
-      id: `reg-${Date.now()}`,
+      id: targetRegId,
       name: finalName,
       emoji: '🎁',
       img: safeImg,
@@ -200,53 +266,64 @@ export default function CreateRegistryPage() {
       status: 'active',
       bucket: 'current',
       guests: selectedGuests.length || 1,
-      items: 0,
+      invitedGuests: selectedGuests.length > 0 ? selectedGuests : ['Guest 1'],
+      itemsList: chosenItems,
+      items: chosenItems.length,
       purchased: 0,
-      value: 0
+      value: totalVal
     };
+
+    localStorage.setItem(`reg_items_${targetRegId}`, JSON.stringify(chosenItems));
 
     try {
       const existing = JSON.parse(localStorage.getItem('local_registries') || '[]');
-      localStorage.setItem('local_registries', JSON.stringify([newReg, ...existing]));
-    } catch (e) {
-      console.warn('localStorage quota exceeded, clearing old items to fit new registry');
-      try {
-        localStorage.removeItem('local_registries');
-        localStorage.setItem('local_registries', JSON.stringify([newReg]));
-      } catch (err) {
-        console.error('Failed to write to localStorage', err);
+      if (editId) {
+        const idx = existing.findIndex((r: any) => String(r.id) === String(editId));
+        if (idx !== -1) {
+          existing[idx] = { ...existing[idx], ...newReg };
+        } else {
+          existing.unshift(newReg);
+        }
+        localStorage.setItem('local_registries', JSON.stringify(existing));
+      } else {
+        localStorage.setItem('local_registries', JSON.stringify([newReg, ...existing]));
       }
+    } catch (e) {
+      console.warn('localStorage quota exceeded');
     }
 
-    await api.safeCall(() => api.post('/api/v1/gift-registry', {
-      title: finalName,
-      event_id: selectedEventId,
-      event_date: displayDate,
-      guests: selectedGuests
-    }));
+    if (editId) {
+      await api.safeCall(() => api.put(`/api/v1/gift-registry/${editId}`, {
+        title: finalName,
+        event_id: selectedEventId,
+        event_date: displayDate,
+        guests: selectedGuests
+      }));
+    } else {
+      await api.safeCall(() => api.post('/api/v1/gift-registry', {
+        title: finalName,
+        event_id: selectedEventId,
+        event_date: displayDate,
+        guests: selectedGuests
+      }));
+    }
 
     setIsSubmitting(false);
-    router.push(`/registry`);
+    router.push(editId ? `/registry/${editId}` : `/registry`);
   };
 
-  const filteredContacts = DEFAULT_CONTACTS.filter(c =>
-    c.name.toLowerCase().includes(contactSearch.toLowerCase())
-  );
-
   return (
-    <DashboardLayout breadcrumbTitle="Create Registry">
+    <DashboardLayout breadcrumbTitle={editId ? "Edit Registry" : "Create Registry"}>
       <div>
         <div className={styles.pageHead}>
-          <h1 className={styles.pageTitle}>Create Gift Registry</h1>
+          <h1 className={styles.pageTitle}>{editId ? "Edit Gift Registry" : "Create Gift Registry"}</h1>
           <p className={styles.pageSub}>
-            Set up your registry, invite guests, then add the gifts you'd love to receive.
+            {editId ? "Update your registry details, invited guests, and gift items." : "Set up your registry, invite guests, then add the gifts you'd love to receive."}
           </p>
         </div>
 
         <div className={styles.crGrid}>
-          {/* LEFT FORM */}
           <div className={styles.crMain}>
-            {/* REGISTRY DETAILS CARD */}
             <div className={styles.card}>
               <div className={styles.cardPad}>
                 <div className={styles.cardTitle}>
@@ -532,14 +609,78 @@ export default function CreateRegistryPage() {
               </div>
             </div>
 
+            {/* GIFT ITEMS CARD (STEP 3) */}
+            <div className={styles.card} style={{ marginTop: '20px' }}>
+              <div className={styles.cardPad}>
+                <div className={styles.cardTitle}>
+                  <span className={styles.ctIc}><i className="bx bx-package"></i></span>
+                  Add Gift Items <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '13px' }}>&#40;optional&#41;</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '3px 10px', borderRadius: '999px', marginLeft: '6px' }}>
+                    {selectedCatalogItemIds.length} selected
+                  </span>
+                </div>
+                <div className={styles.cardSub}>
+                  Select service packages your guests can gift to you. You can also add more items anytime later!
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', marginTop: '16px' }}>
+                  {CATALOG_PACKAGES.map(pkg => {
+                    const isSel = selectedCatalogItemIds.includes(pkg.id);
+                    return (
+                      <div
+                        key={pkg.id}
+                        onClick={() => {
+                          setSelectedCatalogItemIds(prev =>
+                            prev.includes(pkg.id) ? prev.filter(id => id !== pkg.id) : [...prev, pkg.id]
+                          );
+                        }}
+                        style={{
+                          border: isSel ? '2px solid var(--primary)' : '1px solid var(--border)',
+                          background: isSel ? 'var(--primary-light)' : 'var(--surface)',
+                          borderRadius: '12px',
+                          padding: '12px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <img src={pkg.img} alt={pkg.name} style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover' }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pkg.name}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{pkg.vendor}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                          <span style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--primary)' }}>PKR {pkg.price.toLocaleString()}</span>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: isSel ? 'var(--primary)' : 'var(--border)',
+                            color: isSel ? '#ffffff' : 'var(--text-primary)'
+                          }}>
+                            {isSel ? '✓ Added' : '+ Add'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* FORM ACTIONS */}
             <div className={styles.formActions}>
-              <Link className={styles.btnGhost} href="/registry">
+              <Link className={styles.btnGhost} href={editId ? `/registry/${editId}` : "/registry"}>
                 Cancel
               </Link>
               <button className={styles.btnPrimary} onClick={handleSubmit} disabled={isSubmitting}>
                 <i className="bx bx-check"></i>
-                <span>{isSubmitting ? 'Creating...' : 'Create Registry'}</span>
+                <span>{isSubmitting ? (editId ? 'Saving...' : 'Creating...') : (editId ? 'Save Changes' : 'Create Registry')}</span>
               </button>
             </div>
           </div>
@@ -576,12 +717,14 @@ export default function CreateRegistryPage() {
                 </div>
               </div>
 
-              {/* STEP 3: RED IF STEP 2 DONE, GREY IF PENDING */}
-              <div className={`${styles.step} ${isStep2Done ? styles.stepActive : ''}`}>
-                <div className={styles.stepNum}>3</div>
+              {/* STEP 3: GREEN CHECKMARK IF DONE, RED IF ACTIVE, GREY IF PENDING */}
+              <div className={`${styles.step} ${selectedCatalogItemIds.length > 0 ? styles.stepDone : (isStep2Done ? styles.stepActive : '')}`}>
+                <div className={styles.stepNum}>
+                  {selectedCatalogItemIds.length > 0 ? <i className="bx bx-check"></i> : '3'}
+                </div>
                 <div>
                   <div className={styles.stepTitle}>Add items to the registry</div>
-                  <div className={styles.stepDesc}>Browse services and add the packages you'd love — your guests pick from these.</div>
+                  <div className={styles.stepDesc}>Browse services and add the packages you&apos;d love — your guests pick from these.</div>
                 </div>
               </div>
             </div>
@@ -645,5 +788,19 @@ export default function CreateRegistryPage() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+export default function CreateRegistryPage() {
+  return (
+    <React.Suspense fallback={
+      <DashboardLayout breadcrumbTitle="Registry">
+        <div style={{ padding: '60px 20px', textAlign: 'center', fontWeight: 700, color: 'var(--text-secondary)' }}>
+          Loading registry editor...
+        </div>
+      </DashboardLayout>
+    }>
+      <CreateRegistryFormContent />
+    </React.Suspense>
   );
 }

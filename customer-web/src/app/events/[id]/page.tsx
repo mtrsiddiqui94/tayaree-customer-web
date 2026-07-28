@@ -115,6 +115,180 @@ const SERVICE_DRAWER_DATA: Record<string, ServiceDrawerContent> = {
   }
 };
 
+function parseDateFormatted(dStr?: string): { short: string; full: string } {
+  if (!dStr) return { short: '30 Jan 2026', full: 'Friday, 30 Jan 2026 · Lahore' };
+  if (dStr.includes('2026-01-30') || dStr === '2026-01-30') return { short: '30 Jan 2026', full: 'Friday, 30 Jan 2026 · Lahore' };
+  try {
+    const parts = dStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dt = new Date(parseInt(year, 10), monthIdx, day);
+      if (months[monthIdx]) {
+        const dayOfWeek = days[dt.getDay()] || 'Friday';
+        return {
+          short: `${day} ${months[monthIdx]} ${year}`,
+          full: `${dayOfWeek}, ${day} ${months[monthIdx]} ${year} · Lahore`
+        };
+      }
+    }
+  } catch (e) {}
+  return { short: dStr, full: `${dStr} · Lahore` };
+}
+
+function processEventObject(data: any) {
+  const guestsNum = data.guest_count || data.guests || 200;
+  const bAmt = data.budget_amount || data.budgetPerHead || 1500;
+  const rawName = data.event_name || data.name || "Ahmed's Wedding";
+  const nameFormatted = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const rawDate = data.event_date || data.date || '2026-01-30';
+  const dateObj = parseDateFormatted(rawDate);
+
+  const flexStr = data.date_flexibility || data.dateFlexibility || 'specific';
+  const flexDisplay = (flexStr === '1_day' || flexStr === 1 || flexStr === '1') ? '± 1 day flexible' : (flexStr === '2_days' || flexStr === 2 || flexStr === '2') ? '± 2 days flexible' : 'Specific date';
+
+  const pkgs = Array.isArray(data.packages) ? data.packages : [];
+  const svcs = Array.isArray(data.services) ? data.services : [];
+
+  const hasMenu = pkgs.length > 0 || svcs.some((s: string) => String(s).includes('cat') || String(s).includes('menu') || String(s).includes('hightea') || String(s).includes('bbq') || String(s).includes('classic') || String(s).includes('continental'));
+  const isHighTea = pkgs.includes('hightea');
+  const isBBQ = pkgs.includes('bbq');
+  const isCont = pkgs.includes('continental');
+  const menuPrice = isHighTea ? 650 : isBBQ ? 2200 : isCont ? 1800 : 1200;
+  const menuName = isHighTea ? 'High Tea + Desserts' : isBBQ ? 'Premium BBQ' : isCont ? 'Continental Buffet' : 'Classic Pakistani';
+
+  const dynamicServices: ServiceItem[] = [];
+
+  if (hasMenu) {
+    dynamicServices.push({
+      id: 'cat',
+      key: 'catering',
+      name: 'Catering',
+      icon: '🍛',
+      sub: `${menuName} · ${guestsNum} guests`,
+      status: 'confirmed'
+    });
+  }
+
+  const hasVenue = svcs.some((s: string) => String(s).includes('venue') || String(s).includes('hall') || String(s).includes('ballroom') || String(s).includes('marquee') || String(s).includes('lawn'));
+  if (hasVenue) {
+    dynamicServices.push({
+      id: 'ven',
+      key: 'venue',
+      name: 'Venue',
+      icon: '🏛️',
+      sub: '2 quotes received · pending your review',
+      status: 'quoted'
+    });
+  }
+
+  const hasDecor = svcs.some((s: string) => String(s).includes('decor') || String(s).includes('stage') || String(s).includes('floral') || String(s).includes('theme'));
+  if (hasDecor) {
+    dynamicServices.push({
+      id: 'dec',
+      key: 'decor',
+      name: 'Decoration',
+      icon: '🎀',
+      sub: '1 quote received · pending your review',
+      status: 'quoted'
+    });
+  }
+
+  const hasPhoto = svcs.some((s: string) => String(s).includes('photo') || String(s).includes('video') || String(s).includes('camera') || String(s).includes('shoot'));
+  if (hasPhoto) {
+    dynamicServices.push({
+      id: 'pho',
+      key: 'photo',
+      name: 'Photography & Video',
+      icon: '📸',
+      sub: 'Awaiting vendor bids',
+      status: 'pending'
+    });
+  }
+
+  if (dynamicServices.length === 0) {
+    dynamicServices.push(
+      { id: 'cat', key: 'catering', name: 'Catering', icon: '🍛', sub: `Catering · ${guestsNum} guests`, status: 'confirmed' },
+      { id: 'ven', key: 'venue', name: 'Venue', icon: '🏛️', sub: '2 quotes received', status: 'quoted' }
+    );
+  }
+
+  const estCostItems: { name: string; val: number }[] = [];
+  let calcTotalEst = 0;
+
+  if (hasMenu) {
+    const catTotal = guestsNum * menuPrice;
+    calcTotalEst += catTotal;
+    estCostItems.push({
+      name: `Catering (${guestsNum} × ${fmt(menuPrice)})`,
+      val: catTotal
+    });
+  }
+
+  if (hasVenue) {
+    const venTotal = 250000;
+    calcTotalEst += venTotal;
+    estCostItems.push({
+      name: 'Venue',
+      val: venTotal
+    });
+  }
+
+  if (hasDecor) {
+    const decTotal = 120000;
+    calcTotalEst += decTotal;
+    estCostItems.push({
+      name: 'Decoration',
+      val: decTotal
+    });
+  }
+
+  if (hasPhoto) {
+    const phoTotal = 90000;
+    calcTotalEst += phoTotal;
+    estCostItems.push({
+      name: 'Photography',
+      val: phoTotal
+    });
+  }
+
+  if (estCostItems.length === 0) {
+    calcTotalEst = 700000;
+    estCostItems.push(
+      { name: `Catering (${guestsNum} × 1,200)`, val: guestsNum * 1200 },
+      { name: 'Venue', val: 250000 }
+    );
+  }
+
+  const typeStr = typeof data.event_type === 'string' ? data.event_type : (data.event_type?.name || 'Wedding');
+
+  return {
+    id: data.id || data._id,
+    name: nameFormatted,
+    type: typeStr,
+    typeIcon: '💍',
+    date: dateObj.short,
+    fullDate: dateObj.full,
+    flexDisplay,
+    location: data.location || 'Lahore',
+    country: 'Pakistan',
+    img: data.cover_image || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=400&fit=crop',
+    guests: guestsNum,
+    budgetPerHead: bAmt,
+    marketEst: calcTotalEst,
+    estCostItems,
+    quotesCount: data.quote_count ?? dynamicServices.length,
+    registryCount: data.registry_count ?? 0,
+    status: data.status || 'quoted',
+    timingInstructions: data.timing_instructions || data.timingInstructions || null,
+    timingVoiceNote: data.timing_voice_note || data.timingVoiceNote || null,
+    services: dynamicServices
+  };
+}
+
 export default function EventDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -158,30 +332,7 @@ export default function EventDetailPage() {
       const localList = JSON.parse(localStorage.getItem('local_events') || '[]');
       const match = localList.find((item: any) => String(item.id) === String(id));
       if (match) {
-        const guestsNum = match.guest_count || 200;
-        const bAmt = match.budget_amount || 1500;
-        const rawName = match.event_name || "Ahmed's Wedding";
-        const nameFormatted = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        const est = match.market_estimate || 700000;
-
-        setEventData({
-          id: match.id,
-          name: nameFormatted,
-          type: typeof match.event_type === 'string' ? match.event_type : (match.event_type?.name || 'Wedding'),
-          typeIcon: '💍',
-          date: '30 Jan 2026',
-          fullDate: 'Friday, 30 Jan 2026 · Lahore',
-          location: match.location || 'Lahore',
-          country: 'Pakistan',
-          img: match.cover_image || fallback.img,
-          guests: guestsNum,
-          budgetPerHead: bAmt,
-          marketEst: est,
-          quotesCount: match.quote_count || 4,
-          registryCount: match.registry_count || 3,
-          status: match.status || 'quoted',
-          services: defaultServices
-        });
+        setEventData(processEventObject(match));
         setIsLoading(false);
         return;
       }
@@ -192,30 +343,9 @@ export default function EventDetailPage() {
     const res = await api.safeCall(() => api.get<any>(`/api/v1/events/${id}`));
     if (res.success && res.data) {
       const data = res.data.data || res.data;
-      const typeStr = typeof data.event_type === 'string' ? data.event_type : (data.event_type?.name || 'Wedding');
-      const guestsNum = data.guest_count || 200;
-      const bAmt = data.budget_amount || 1500;
-
-      setEventData({
-        id: data.id || data._id,
-        name: data.event_name || "Ahmed's Wedding",
-        type: typeStr,
-        typeIcon: '💍',
-        date: '30 Jan 2026',
-        fullDate: 'Friday, 30 Jan 2026 · Lahore',
-        location: data.location || 'Lahore',
-        country: 'Pakistan',
-        img: data.cover_image || fallback.img,
-        guests: guestsNum,
-        budgetPerHead: bAmt,
-        marketEst: 700000,
-        quotesCount: data.quote_count ?? 4,
-        registryCount: data.registry_count || 3,
-        status: data.status || 'quoted',
-        services: defaultServices
-      });
+      setEventData(processEventObject(data));
     } else {
-      setEventData(fallback);
+      setEventData(processEventObject(fallback));
     }
     setIsLoading(false);
   }
@@ -290,7 +420,7 @@ export default function EventDetailPage() {
           <div className={styles.factTile}>
             <div className={styles.factLbl}><i className="bx bx-calendar"></i>DATE</div>
             <div className={styles.factVal}>{eventData.date}</div>
-            <div className={styles.factSub}>± 1 day flexible</div>
+            <div className={styles.factSub}>{eventData.flexDisplay}</div>
           </div>
           <div className={styles.factTile}>
             <div className={styles.factLbl}><i className="bx bx-group"></i>GUESTS</div>
@@ -304,7 +434,7 @@ export default function EventDetailPage() {
           </div>
           <div className={styles.factTile}>
             <div className={styles.factLbl}><i className="bx bx-calculator"></i>EST. COST</div>
-            <div className={styles.factVal}>PKR {fmt(700000)}</div>
+            <div className={styles.factVal}>PKR {fmt(eventData.marketEst)}</div>
             <div className={styles.factSub}>Market estimate</div>
           </div>
         </div>
@@ -352,7 +482,7 @@ export default function EventDetailPage() {
                   <div>
                     <div className={styles.evInfoLbl}>DATE</div>
                     <div className={styles.evInfoVal}>{eventData.date}</div>
-                    <div className={styles.evInfoSub}>Friday · ± 1 day flexible</div>
+                    <div className={styles.evInfoSub}>{eventData.flexDisplay}</div>
                   </div>
                 </div>
 
@@ -384,6 +514,43 @@ export default function EventDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* TIMING INSTRUCTIONS & VOICE NOTE CARD */}
+            {(eventData.timingInstructions || eventData.timingVoiceNote) && (
+              <div className={styles.evInfo} style={{ marginTop: '18px' }}>
+                <div className={styles.evInfoHead}>
+                  <i className="bx bx-notepad" style={{ color: '#D71921', fontSize: '18px' }}></i>Timing Instructions &amp; Voice Note
+                </div>
+                {eventData.timingInstructions && (
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-primary)', margin: '12px 0 14px', lineHeight: '1.6' }}>
+                    {eventData.timingInstructions}
+                  </p>
+                )}
+                {eventData.timingVoiceNote && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`voice-audio-el-${eventData.id}`) as HTMLAudioElement;
+                        if (el) {
+                          if (el.paused) el.play();
+                          else el.pause();
+                        }
+                      }}
+                      style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#D71921', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}
+                      title="Play / Pause Voice Note"
+                    >
+                      <i className="bx bx-play"></i>
+                    </button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>Play Voice Note Instruction</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Recorded by organizer · Tap to play audio</div>
+                      <audio id={`voice-audio-el-${eventData.id}`} src={eventData.timingVoiceNote} style={{ display: 'none' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* SPLIT LAYOUT: YOUR SERVICES (LEFT) + ESTIMATED COST (RIGHT) */}
             <div className={styles.split}>
@@ -433,30 +600,20 @@ export default function EventDetailPage() {
               {/* ESTIMATED EVENT COST CARD */}
               <div className={styles.estCard}>
                 <div className={styles.estLbl}>ESTIMATED EVENT COST</div>
-                <div className={styles.estRow}>
-                  <span className={styles.estN}>Catering (200 × 1,200)</span>
-                  <span className={styles.estV}>PKR 2,40,000</span>
-                </div>
-                <div className={styles.estRow}>
-                  <span className={styles.estN}>Venue</span>
-                  <span className={styles.estV}>PKR 2,50,000</span>
-                </div>
-                <div className={styles.estRow}>
-                  <span className={styles.estN}>Decoration</span>
-                  <span className={styles.estV}>PKR 1,20,000</span>
-                </div>
-                <div className={styles.estRow}>
-                  <span className={styles.estN}>Photography</span>
-                  <span className={styles.estV}>PKR 90,000</span>
-                </div>
+                {(eventData.estCostItems || []).map((item: any, idx: number) => (
+                  <div key={idx} className={styles.estRow}>
+                    <span className={styles.estN}>{item.name}</span>
+                    <span className={styles.estV}>PKR {fmt(item.val)}</span>
+                  </div>
+                ))}
 
                 <div className={styles.estTotal}>
                   <div className={styles.estTotalLbl}>ESTIMATED TOTAL</div>
-                  <div className={styles.estTotalAmt}>PKR 7,00,000</div>
+                  <div className={styles.estTotalAmt}>PKR {fmt(eventData.marketEst)}</div>
                 </div>
 
                 <div className={styles.estNote}>
-                  Vendors typically bid 20–35% below market — expect final quotes around <b style={{ color: 'var(--success)', fontWeight: 800 }}>PKR 4,76,000+</b>.
+                  Vendors typically bid 20–35% below market — expect final quotes around <b style={{ color: 'var(--success)', fontWeight: 800 }}>PKR {fmt(Math.round(eventData.marketEst * 0.75))}+</b>.
                 </div>
               </div>
             </div>

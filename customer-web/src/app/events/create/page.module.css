@@ -1930,3 +1930,203 @@
   transform: translateY(-2px);
 }
 
+/* TIMING INSTRUCTIONS & VOICE NOTE CARD */
+.timingBoxCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-top: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.timingBoxHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.timingTextareaWrapper {
+  position: relative;
+  width: 100%;
+}
+.timingTextarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 14px 92px 14px 16px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 90px;
+}
+.timingTextarea:focus {
+  border-color: #D71921;
+  box-shadow: 0 0 0 3px rgba(215, 25, 33, 0.1);
+  background: var(--card);
+}
+.timingBoxActions {
+  position: absolute;
+  right: 12px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timingSendBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #D71921;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(215, 25, 33, 0.3);
+  transition: transform 0.15s, background-color 0.15s;
+}
+.timingSendBtn:hover {
+  transform: scale(1.08);
+  background: #b51219;
+}
+.timingSendBtnSaved {
+  background: #10B981 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+.timingMicBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #D71921;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(215, 25, 33, 0.3);
+  transition: transform 0.15s, background-color 0.15s;
+}
+.timingMicBtn:hover {
+  transform: scale(1.08);
+  background: #b51219;
+}
+.timingMicBtnRecording {
+  background: #222;
+  animation: pulseMic 1.2s infinite ease-in-out;
+  box-shadow: 0 0 0 6px rgba(215, 25, 33, 0.3);
+}
+
+@keyframes pulseMic {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.recordingLiveStrip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #FFF0F0;
+  border: 1px solid #FFE0E0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #D71921;
+}
+.recordingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #D71921;
+  animation: blinkDot 0.8s infinite alternate;
+}
+@keyframes blinkDot {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+.recordingStopLink {
+  margin-left: auto;
+  background: #D71921;
+  color: #fff;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.voicePlayerCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.voicePlayBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #D71921;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.voiceWaveTrack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.voiceWaveBars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+}
+.voiceWaveBars .bar {
+  width: 3px;
+  height: 14px;
+  background: #D71921;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+.voiceNoteLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.voiceDeleteBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s;
+}
+.voiceDeleteBtn:hover {
+  color: #D71921;
+}
+
