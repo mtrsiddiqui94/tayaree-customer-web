@@ -71,8 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function fetchProfile(authToken?: string) {
     try {
-      const profileData = await api.get<{ data: UserProfile }>(ENDPOINTS.PROFILE_ME);
-      const profile = profileData?.data || profileData;
+      const profileData = await api.get<{ data: any }>(ENDPOINTS.PROFILE_ME);
+      const raw = profileData?.data || profileData;
+      const profile = {
+        ...raw,
+        image: raw.image_url || raw.image || null
+      };
       setUser(profile as UserProfile);
     } catch {
       // If profile fetch fails with 401, token is invalid

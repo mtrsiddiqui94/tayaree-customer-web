@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import styles from './page.module.css';
 
 export default function PhoneSettingsPage() {
   const router = useRouter();
+  const { updateUser } = useAuth();
 
   // Data States
   const [currentPhone, setCurrentPhone] = useState('unset');
@@ -19,6 +21,7 @@ export default function PhoneSettingsPage() {
   const [password, setPassword] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [errors, setErrors] = useState<{ password?: string; newPhone?: string; otpCode?: string }>({});
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -68,25 +71,56 @@ export default function PhoneSettingsPage() {
     return () => clearTimeout(timer);
   }, [router]);
 
+  const validatePassword = (val: string) => {
+    if (!val) {
+      setErrors((prev) => ({ ...prev, password: 'Please enter your current password.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, password: undefined }));
+    return true;
+  };
+
+  const validatePhone = (val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, '');
+    let finalPhone = cleaned;
+    if (cleaned.startsWith('92')) {
+      finalPhone = cleaned.slice(2);
+    } else if (cleaned.startsWith('0')) {
+      finalPhone = cleaned.slice(1);
+    }
+
+    if (finalPhone.length < 10) {
+      setErrors((prev) => ({ ...prev, newPhone: 'Please enter a valid 10-digit mobile number.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, newPhone: undefined }));
+    return true;
+  };
+
+  const validateOtpCode = (val: string) => {
+    if (!val) {
+      setErrors((prev) => ({ ...prev, otpCode: 'Please enter the OTP verification code.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, otpCode: undefined }));
+    return true;
+  };
+
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password) {
-      showToast('Please enter your current password.', 'error');
+    const isPassValid = validatePassword(password);
+    const isPhoneValid = validatePhone(newPhone);
+
+    if (!isPassValid || !isPhoneValid) {
       return;
     }
-    
-    // Clean and validate new phone input
+
     const cleanedPhone = newPhone.replace(/[^0-9]/g, '');
     let finalPhone = cleanedPhone;
     if (cleanedPhone.startsWith('92')) {
       finalPhone = cleanedPhone.slice(2);
     } else if (cleanedPhone.startsWith('0')) {
       finalPhone = cleanedPhone.slice(1);
-    }
-
-    if (finalPhone.length < 10) {
-      showToast('Please enter a valid 10-digit mobile number.', 'error');
-      return;
     }
 
     try {
@@ -117,8 +151,8 @@ export default function PhoneSettingsPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode) {
-      showToast('Please enter the OTP verification code.', 'error');
+    const isOtpValid = validateOtpCode(otpCode);
+    if (!isOtpValid) {
       return;
     }
 
@@ -148,6 +182,10 @@ export default function PhoneSettingsPage() {
         setPassword('');
         setNewPhone('');
         setOtpCode('');
+        setErrors({});
+        if (updateUser) {
+          updateUser({ phone: finalPhone, phone_country: '92' });
+        }
         loadProfile();
       } else {
         showToast(res.message || 'Verification failed. Incorrect OTP.', 'error');
@@ -231,7 +269,7 @@ export default function PhoneSettingsPage() {
               <div className={styles.divider}></div>
 
               {step === 1 ? (
-                <form onSubmit={handleRequestOtp}>
+                <form onSubmit={handleRequestOtp} noValidate>
                   <div className={styles.cardTitle}>
                     <i className="bx bx-edit"></i>Change Number
                   </div>
@@ -241,30 +279,44 @@ export default function PhoneSettingsPage() {
 
                   <div className={styles.fld}>
                     <label className={styles.fldLbl}>Current Account Password*</label>
-                    <div className={styles.fldWrap}>
+                    <div className={`${styles.fldWrap} ${errors.password ? styles.fldWrapError : ''}`}>
                       <i className="bx bx-lock-alt"></i>
                       <input
                         type="password"
                         placeholder="Enter password to confirm identity"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errors.password) validatePassword(e.target.value);
+                        }}
+                        onBlur={(e) => validatePassword(e.target.value)}
                         required
                       />
                     </div>
+                    {errors.password && (
+                      <span className={styles.fldErrorMsg}>{errors.password}</span>
+                    )}
                   </div>
 
                   <div className={styles.fld}>
                     <label className={styles.fldLbl}>New Mobile Number*</label>
-                    <div className={styles.fldWrap}>
+                    <div className={`${styles.fldWrap} ${errors.newPhone ? styles.fldWrapError : ''}`}>
                       <span className={styles.fldPrefix}>+92</span>
                       <input
                         type="tel"
                         placeholder="3XX XXXXXXX"
                         value={newPhone}
-                        onChange={handlePhoneInputChange}
+                        onChange={(e) => {
+                          handlePhoneInputChange(e);
+                          if (errors.newPhone) validatePhone(e.target.value);
+                        }}
+                        onBlur={(e) => validatePhone(e.target.value)}
                         required
                       />
                     </div>
+                    {errors.newPhone && (
+                      <span className={styles.fldErrorMsg}>{errors.newPhone}</span>
+                    )}
                   </div>
 
                   <button type="submit" disabled={isSaving} className={styles.btnSave}>
@@ -273,7 +325,7 @@ export default function PhoneSettingsPage() {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp}>
+                <form onSubmit={handleVerifyOtp} noValidate>
                   <div className={styles.cardTitle}>
                     <i className="bx bx-shield-quarter"></i>Verify Phone Number
                   </div>
@@ -283,22 +335,29 @@ export default function PhoneSettingsPage() {
 
                   <div className={styles.fld}>
                     <label className={styles.fldLbl}>One-Time Verification OTP*</label>
-                    <div className={styles.fldWrap}>
+                    <div className={`${styles.fldWrap} ${errors.otpCode ? styles.fldWrapError : ''}`}>
                       <i className="bx bx-key"></i>
                       <input
                         type="text"
                         placeholder="Enter 6-digit OTP code"
                         value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
+                        onChange={(e) => {
+                          setOtpCode(e.target.value);
+                          if (errors.otpCode) validateOtpCode(e.target.value);
+                        }}
+                        onBlur={(e) => validateOtpCode(e.target.value)}
                         required
                       />
                     </div>
+                    {errors.otpCode && (
+                      <span className={styles.fldErrorMsg}>{errors.otpCode}</span>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button type="submit" disabled={isSaving} className={styles.btnSave}>
                       <i className="bx bx-check"></i>
-                      {isSaving ? 'Verifying...' : 'Verify &amp; Update Number'}
+                      {isSaving ? 'Verifying...' : 'Verify & Update Number'}
                     </button>
                     <button
                       type="button"

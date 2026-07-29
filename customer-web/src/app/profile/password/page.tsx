@@ -21,9 +21,9 @@ export default function ChangePasswordPage() {
   
   // Two Factor Authentication Toggle
   const [isTfaOn, setIsTfaOn] = useState(false);
-
   // States
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{ current?: string; new?: string; confirm?: string }>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -38,21 +38,49 @@ export default function ChangePasswordPage() {
     }
   }, [router]);
 
+  const validateCurrent = (val: string) => {
+    if (!val) {
+      setErrors((prev) => ({ ...prev, current: 'Please enter your current password.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, current: undefined }));
+    return true;
+  };
+
+  const validateNew = (val: string) => {
+    if (!val) {
+      setErrors((prev) => ({ ...prev, new: 'Please enter a new password.' }));
+      return false;
+    }
+    if (val.length < 8) {
+      setErrors((prev) => ({ ...prev, new: 'New password must be at least 8 characters long.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, new: undefined }));
+    return true;
+  };
+
+  const validateConfirm = (val: string, newVal: string) => {
+    if (!val) {
+      setErrors((prev) => ({ ...prev, confirm: 'Please confirm your new password.' }));
+      return false;
+    }
+    if (val !== newVal) {
+      setErrors((prev) => ({ ...prev, confirm: 'Confirm password does not match new password.' }));
+      return false;
+    }
+    setErrors((prev) => ({ ...prev, confirm: undefined }));
+    return true;
+  };
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('Please fill out all fields.', 'error');
-      return;
-    }
+    const isCurrentValid = validateCurrent(currentPassword);
+    const isNewValid = validateNew(newPassword);
+    const isConfirmValid = validateConfirm(confirmPassword, newPassword);
 
-    if (newPassword.length < 8) {
-      showToast('New password must be at least 8 characters long.', 'error');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      showToast('Confirm password does not match new password.', 'error');
+    if (!isCurrentValid || !isNewValid || !isConfirmValid) {
       return;
     }
 
@@ -124,15 +152,19 @@ export default function ChangePasswordPage() {
               Use at least 8 characters with a mix of letters, numbers, and symbols.
             </div>
 
-            <form onSubmit={handlePasswordSubmit}>
+            <form onSubmit={handlePasswordSubmit} noValidate>
               <div className={styles.fld}>
                 <label className={styles.fldLbl}>Current Password</label>
-                <div className={styles.fldWrap}>
+                <div className={`${styles.fldWrap} ${errors.current ? styles.fldWrapError : ''}`}>
                   <i className="bx bx-key"></i>
                   <input
                     type={showCurrent ? 'text' : 'password'}
                     value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      if (errors.current) validateCurrent(e.target.value);
+                    }}
+                    onBlur={(e) => validateCurrent(e.target.value)}
                     placeholder="Enter current password"
                     required
                   />
@@ -141,16 +173,22 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowCurrent(!showCurrent)}
                   ></i>
                 </div>
+                {errors.current && <span className={styles.fldErrorMsg}>{errors.current}</span>}
               </div>
 
               <div className={styles.fld}>
                 <label className={styles.fldLbl}>New Password</label>
-                <div className={styles.fldWrap}>
+                <div className={`${styles.fldWrap} ${errors.new ? styles.fldWrapError : ''}`}>
                   <i className="bx bx-lock"></i>
                   <input
                     type={showNew ? 'text' : 'password'}
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      if (errors.new) validateNew(e.target.value);
+                      if (confirmPassword && errors.confirm) validateConfirm(confirmPassword, e.target.value);
+                    }}
+                    onBlur={(e) => validateNew(e.target.value)}
                     placeholder="Enter new password"
                     required
                   />
@@ -159,16 +197,21 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowNew(!showNew)}
                   ></i>
                 </div>
+                {errors.new && <span className={styles.fldErrorMsg}>{errors.new}</span>}
               </div>
 
               <div className={styles.fld}>
                 <label className={styles.fldLbl}>Confirm New Password</label>
-                <div className={styles.fldWrap}>
+                <div className={`${styles.fldWrap} ${errors.confirm ? styles.fldWrapError : ''}`}>
                   <i className="bx bx-lock"></i>
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (errors.confirm) validateConfirm(e.target.value, newPassword);
+                    }}
+                    onBlur={(e) => validateConfirm(e.target.value, newPassword)}
                     placeholder="Re-enter new password"
                     required
                   />
@@ -177,6 +220,7 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowConfirm(!showConfirm)}
                   ></i>
                 </div>
+                {errors.confirm && <span className={styles.fldErrorMsg}>{errors.confirm}</span>}
                 <div className={styles.pwTips}>
                   Passwords must match and contain at least 8 characters.
                 </div>

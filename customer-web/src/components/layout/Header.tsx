@@ -52,12 +52,14 @@ export default function Header() {
     router.push('/login');
   };
 
-  // Get avatar letter from user profile or phone
-  const avatarLetter = user?.first_name
-    ? user.first_name.charAt(0).toUpperCase()
-    : user?.phone
-      ? user.phone.replace('+', '').charAt(0)
-      : 'U';
+  const getNameForAvatar = () => {
+    const name = user?.full_name || user?.name || user?.first_name;
+    if (name && name.trim().length > 0) return name.trim().charAt(0).toUpperCase();
+    if (user?.phone && user.phone.trim().length > 0) return user.phone.replace(/[^0-9a-zA-Z]/g, '').charAt(0).toUpperCase();
+    return 'U';
+  };
+  const avatarLetter = getNameForAvatar();
+  const hasImage = user?.image && user.image.trim().length > 0 && user.image !== 'null';
 
   return (
     <header className={styles.header}>
@@ -174,9 +176,9 @@ export default function Header() {
               <Link href="/chat" className={styles.iconBtn} title="Messages">
                 <i className="bx bx-message-square-detail"></i>
               </Link>
-              <Link href="/profile" className={styles.avatarBtn} title="Profile">
-                {user?.image ? (
-                  <img src={user.image} alt={user.first_name || 'Profile'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <Link href="/dashboard" className={styles.avatarBtn} title="Profile">
+                {hasImage ? (
+                  <img src={user.image!} alt={user?.name || 'Profile'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   avatarLetter
                 )}

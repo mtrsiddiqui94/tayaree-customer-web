@@ -42,6 +42,15 @@ export default function DashboardLayout({ children, breadcrumbTitle = 'Dashboard
     return pathname.startsWith(path);
   };
 
+  const getNameForAvatar = () => {
+    const name = user?.full_name || user?.name || user?.first_name;
+    if (name && name.trim().length > 0) return name.trim().charAt(0).toUpperCase();
+    if (user?.phone && user.phone.trim().length > 0) return user.phone.replace(/[^0-9a-zA-Z]/g, '').charAt(0).toUpperCase();
+    return 'U';
+  };
+  const avatarLetter = getNameForAvatar();
+  const hasImage = user?.image && user.image.trim().length > 0 && user.image !== 'null';
+
   return (
     <>
       <Header />
@@ -65,11 +74,13 @@ export default function DashboardLayout({ children, breadcrumbTitle = 'Dashboard
             <aside className={styles.sidebar}>
               <div className={styles.sidebarCard}>
                 <div className={styles.userCard}>
-                  <div className={styles.userAvatar}>
-                    {user?.image ? (
-                      <img src={user.image} alt={user?.name || 'User'} />
+                  <div className={styles.userAvatar} style={!hasImage ? { background: 'var(--primary)', color: '#fff', border: 'none' } : {}}>
+                    {hasImage ? (
+                      <img src={user.image!} alt={user?.name || 'User'} />
                     ) : (
-                      <i className="bx bx-user"></i>
+                      <span style={{ fontSize: '36px', fontWeight: 700 }}>
+                        {avatarLetter}
+                      </span>
                     )}
                   </div>
                   <h3 className={styles.userName}>
